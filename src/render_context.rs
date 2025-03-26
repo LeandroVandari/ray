@@ -9,10 +9,10 @@ use winit::window::{Window, WindowAttributes};
 
 pub struct RenderContext<'window> {
     pub(crate) window: Arc<Window>,
-    surface: Surface<'window>,
-    device: Device,
-    queue: Queue,
-    config: SurfaceConfiguration,
+    pub(crate) surface: Surface<'window>,
+    pub(crate) device: Device,
+    pub(crate) queue: Queue,
+    pub(crate) config: SurfaceConfiguration,
 }
 
 impl<'window> RenderContext<'window> {
