@@ -1,8 +1,11 @@
 use std::sync::Arc;
 
-use wgpu::{Adapter, Backends, CreateSurfaceError, Device, DeviceDescriptor, Instance, InstanceDescriptor, Queue, RequestAdapterOptions, Surface, SurfaceConfiguration, TextureUsages};
-use winit::window::{Window, WindowAttributes};
 use pollster::FutureExt as _;
+use wgpu::{
+    Adapter, Backends, CreateSurfaceError, Device, DeviceDescriptor, Instance, InstanceDescriptor,
+    Queue, RequestAdapterOptions, Surface, SurfaceConfiguration, TextureUsages,
+};
+use winit::window::{Window, WindowAttributes};
 
 pub struct RenderContext<'window> {
     pub(crate) window: Arc<Window>,
@@ -13,13 +16,15 @@ pub struct RenderContext<'window> {
 }
 
 impl<'window> RenderContext<'window> {
-    pub fn new(event_loop: &winit::event_loop::ActiveEventLoop) -> Result<Self, CreateSurfaceError> {
+    pub fn new(
+        event_loop: &winit::event_loop::ActiveEventLoop,
+    ) -> Result<Self, CreateSurfaceError> {
         let instance = Self::create_instance();
 
         let window = Arc::new(Self::create_window(event_loop));
 
         let surface = instance.create_surface(window.clone())?;
-        
+
         let adapter = instance
             .request_adapter(&RequestAdapterOptions {
                 compatible_surface: Some(&surface),

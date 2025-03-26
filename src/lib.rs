@@ -1,7 +1,4 @@
-use winit::{
-    application::ApplicationHandler,
-    event::WindowEvent,
-};
+use winit::{application::ApplicationHandler, event::WindowEvent};
 mod render_context;
 use render_context::RenderContext;
 
@@ -9,8 +6,6 @@ use render_context::RenderContext;
 pub struct App<'window> {
     surface_state: Option<RenderContext<'window>>,
 }
-
-
 
 impl<'window> ApplicationHandler for App<'window> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
