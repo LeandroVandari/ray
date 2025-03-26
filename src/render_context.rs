@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anyhow::{Result, bail};
 use pollster::FutureExt as _;
 use wgpu::{
     Adapter, Backends, CreateSurfaceError, Device, DeviceDescriptor, Instance, InstanceDescriptor,
@@ -16,27 +17,27 @@ pub struct RenderContext<'window> {
 }
 
 impl<'window> RenderContext<'window> {
-    pub fn new(
-        event_loop: &winit::event_loop::ActiveEventLoop,
-    ) -> Result<Self, CreateSurfaceError> {
+    pub fn new(event_loop: &winit::event_loop::ActiveEventLoop) -> Result<Self> {
         let instance = Self::create_instance();
 
-        let window = Arc::new(Self::create_window(event_loop));
+        let window = Arc::new(Self::create_window(event_loop)?);
 
         let surface = instance.create_surface(window.clone())?;
 
-        let adapter = instance
+        let adapter = match instance
             .request_adapter(&RequestAdapterOptions {
                 compatible_surface: Some(&surface),
                 ..Default::default()
             })
             .block_on()
-            .unwrap();
+        {
+            Some(adapter) => adapter,
+            None => bail!("Couldn't create adapter."),
+        };
 
         let (device, queue) = adapter
             .request_device(&DeviceDescriptor::default(), None)
-            .block_on()
-            .unwrap();
+            .block_on()?;
 
         let config = Self::create_surface_configuration(&surface, &adapter, &window);
 
@@ -57,15 +58,15 @@ impl<'window> RenderContext<'window> {
         Instance::new(&instance_desc)
     }
 
-    fn create_window(event_loop: &winit::event_loop::ActiveEventLoop) -> Window {
-        event_loop
-            .create_window(
-                WindowAttributes::default()
-                    .with_maximized(true)
-                    .with_resizable(false)
-                    .with_title("Ray tracer"),
-            )
-            .unwrap()
+    fn create_window(
+        event_loop: &winit::event_loop::ActiveEventLoop,
+    ) -> Result<Window, winit::error::OsError> {
+        event_loop.create_window(
+            WindowAttributes::default()
+                .with_maximized(true)
+                .with_resizable(false)
+                .with_title("Ray tracer"),
+        )
     }
 
     fn create_surface_configuration(
@@ -94,3 +95,6 @@ impl<'window> RenderContext<'window> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {}
