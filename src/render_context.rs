@@ -3,8 +3,8 @@ use std::sync::Arc;
 use anyhow::{Result, bail};
 use pollster::FutureExt as _;
 use wgpu::{
-    Adapter, Backends, CreateSurfaceError, Device, DeviceDescriptor, Instance, InstanceDescriptor,
-    Queue, RequestAdapterOptions, Surface, SurfaceConfiguration, TextureUsages,
+    Adapter, Backends, Device, DeviceDescriptor, Instance, InstanceDescriptor, Queue,
+    RequestAdapterOptions, Surface, SurfaceConfiguration, TextureUsages,
 };
 use winit::window::{Window, WindowAttributes};
 
@@ -95,6 +95,3 @@ impl<'window> RenderContext<'window> {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {}
