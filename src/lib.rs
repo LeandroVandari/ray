@@ -18,7 +18,6 @@ pub struct App<'window> {
 
 struct SurfaceState<'window> {
     window: Arc<Window>,
-    instance: Instance,
     surface: Surface<'window>,
     device: Device,
     queue: Queue,
@@ -58,7 +57,6 @@ impl<'window> SurfaceState<'window> {
 
         Ok(Self {
             surface,
-            instance,
             window,
             device,
             queue,
