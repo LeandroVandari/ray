@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use anyhow::{Result, bail};
-use pollster::FutureExt as _;
 use wgpu::{
     Adapter, Backends, Device, DeviceDescriptor, Instance, InstanceDescriptor, Queue,
     RequestAdapterOptions, Surface, SurfaceConfiguration, TextureUsages,
@@ -17,7 +16,7 @@ pub struct RenderContext<'window> {
 }
 
 impl<'window> RenderContext<'window> {
-    pub fn new(event_loop: &winit::event_loop::ActiveEventLoop) -> Result<Self> {
+    pub async fn new(event_loop: &winit::event_loop::ActiveEventLoop) -> Result<Self> {
         let instance = Self::create_instance();
 
         let window = Arc::new(Self::create_window(event_loop)?);
@@ -29,7 +28,7 @@ impl<'window> RenderContext<'window> {
                 compatible_surface: Some(&surface),
                 ..Default::default()
             })
-            .block_on()
+            .await
         {
             Some(adapter) => adapter,
             None => bail!("Couldn't create adapter."),
@@ -37,9 +36,10 @@ impl<'window> RenderContext<'window> {
 
         let (device, queue) = adapter
             .request_device(&DeviceDescriptor::default(), None)
-            .block_on()?;
+            .await?;
 
         let config = Self::create_surface_configuration(&surface, &adapter, &window);
+        surface.configure(&device, &config);
 
         Ok(Self {
             surface,
