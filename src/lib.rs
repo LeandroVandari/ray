@@ -1,52 +1,20 @@
-use std::sync::Arc;
-
-use wgpu::{Backends, CreateSurfaceError, Instance, InstanceDescriptor, Surface};
-use winit::{
-    application::ApplicationHandler,
-    event::WindowEvent,
-    window::{Window, WindowAttributes},
+use wgpu::{
+    Color, CommandEncoderDescriptor, RenderPassColorAttachment, RenderPassDescriptor,
+    TextureViewDescriptor,
 };
+use winit::{application::ApplicationHandler, event::WindowEvent};
+mod render_context;
+use pollster::FutureExt as _;
+use render_context::RenderContext;
 
 #[derive(Default)]
 pub struct App<'window> {
-    surface_state: Option<SurfaceState<'window>>,
-}
-
-struct SurfaceState<'window> {
-    window: Arc<Window>,
-    instance: Instance,
-    surface: Surface<'window>,
-}
-
-impl<'window> SurfaceState<'window> {
-    fn new(event_loop: &winit::event_loop::ActiveEventLoop) -> Result<Self, CreateSurfaceError> {
-        let instance_desc = InstanceDescriptor {
-            backends: Backends::all(),
-            ..Default::default()
-        };
-        let instance = Instance::new(&instance_desc);
-
-        let window = Arc::new(
-            event_loop
-                .create_window(
-                    WindowAttributes::default()
-                        .with_maximized(true)
-                        .with_title("Ray tracer"),
-                )
-                .unwrap(),
-        );
-
-        Ok(Self {
-            surface: instance.create_surface(window.clone())?,
-            instance,
-            window,
-        })
-    }
+    render_context: Option<RenderContext<'window>>,
 }
 
 impl<'window> ApplicationHandler for App<'window> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        self.surface_state = Some(SurfaceState::new(event_loop).unwrap());
+        self.render_context = Some(pollster::block_on(RenderContext::new(event_loop)).unwrap());
     }
 
     fn window_event(
@@ -61,7 +29,46 @@ impl<'window> ApplicationHandler for App<'window> {
             }
 
             WindowEvent::RedrawRequested => {
-                self.surface_state.as_ref().unwrap().window.request_redraw();
+                let render_context = self.render_context.as_ref().unwrap();
+
+                let output = render_context.surface.get_current_texture().unwrap();
+                let view = output
+                    .texture
+                    .create_view(&TextureViewDescriptor::default());
+
+                let mut encoder =
+                    render_context
+                        .device
+                        .create_command_encoder(&CommandEncoderDescriptor {
+                            label: Some("Render Enconder"),
+                        });
+                {
+                    let _render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
+                        label: Some("Render Pass"),
+                        color_attachments: &[Some(RenderPassColorAttachment {
+                            view: &view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(Color {
+                                    r: 0.1,
+                                    g: 0.2,
+                                    b: 0.3,
+                                    a: 1.0,
+                                }),
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        ..Default::default()
+                    });
+                }
+
+                render_context
+                    .queue
+                    .submit(std::iter::once(encoder.finish()));
+
+                output.present();
+
+                render_context.window.request_redraw();
             }
 
             _ => (),
