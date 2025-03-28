@@ -4,15 +4,15 @@ use anyhow::{Result, bail};
 use wgpu::{
     Adapter, Backends, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout,
     BindGroupLayoutDescriptor, BindGroupLayoutEntry, ComputePipeline, ComputePipelineDescriptor,
-    Device, DeviceDescriptor, Instance, InstanceDescriptor, PipelineCompilationOptions,
+    Device, DeviceDescriptor, Features, Instance, InstanceDescriptor, PipelineCompilationOptions,
     PipelineLayoutDescriptor, Queue, RequestAdapterOptions, ShaderStages, Surface,
     SurfaceConfiguration, Texture, TextureDescriptor, TextureSampleType, TextureUsages,
     TextureView, TextureViewDescriptor,
 };
 use winit::window::{Window, WindowAttributes};
 
-const WIDTH: u32 = 160;
-const HEIGHT: u32 = 90;
+pub const WIDTH: u32 = 160;
+pub const HEIGHT: u32 = 90;
 
 pub struct RenderContext<'window> {
     pub(crate) window: Arc<Window>,
@@ -45,7 +45,13 @@ impl<'window> RenderContext<'window> {
         };
 
         let (device, queue) = adapter
-            .request_device(&DeviceDescriptor::default(), None)
+            .request_device(
+                &DeviceDescriptor {
+                    required_features: Features::BGRA8UNORM_STORAGE,
+                    ..Default::default()
+                },
+                None,
+            )
             .await?;
 
         let config = Self::create_surface_configuration(&surface, &adapter, &window);
@@ -150,10 +156,11 @@ impl<'window> RenderContext<'window> {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            format: wgpu::TextureFormat::Bgra8Unorm,
             usage: TextureUsages::TEXTURE_BINDING
                 | TextureUsages::COPY_DST
-                | TextureUsages::STORAGE_BINDING,
+                | TextureUsages::STORAGE_BINDING
+                | TextureUsages::COPY_SRC,
             view_formats: &[],
         });
 
@@ -165,10 +172,10 @@ impl<'window> RenderContext<'window> {
             entries: &[BindGroupLayoutEntry {
                 binding: 0,
                 visibility: ShaderStages::COMPUTE,
-                ty: wgpu::BindingType::Texture {
-                    sample_type: TextureSampleType::Float { filterable: true },
+                ty: wgpu::BindingType::StorageTexture {
+                    access: wgpu::StorageTextureAccess::WriteOnly,
+                    format: wgpu::TextureFormat::Bgra8Unorm,
                     view_dimension: wgpu::TextureViewDimension::D2,
-                    multisampled: false,
                 },
                 count: None,
             }],

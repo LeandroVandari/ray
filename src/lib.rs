@@ -1,10 +1,12 @@
 use wgpu::{
-    Color, CommandEncoderDescriptor, ComputePassDescriptor, RenderPassColorAttachment,
-    RenderPassDescriptor, TextureViewDescriptor,
+    Color, CommandEncoderDescriptor, ComputePassDescriptor, Extent3d, Origin3d,
+    RenderPassColorAttachment, RenderPassDescriptor, TexelCopyTextureInfoBase,
+    TextureViewDescriptor,
 };
 use winit::{application::ApplicationHandler, event::WindowEvent};
 mod render_context;
 use render_context::RenderContext;
+use render_context::{HEIGHT, WIDTH};
 
 #[derive(Default)]
 pub struct App<'window> {
@@ -71,6 +73,26 @@ impl<'window> ApplicationHandler for App<'window> {
                         ..Default::default()
                     });
                 }
+
+                encoder.copy_texture_to_texture(
+                    wgpu::TexelCopyTextureInfoBase {
+                        texture: &render_context.texture,
+                        mip_level: 0,
+                        origin: Origin3d::ZERO,
+                        aspect: wgpu::TextureAspect::All,
+                    },
+                    TexelCopyTextureInfoBase {
+                        texture: &output.texture,
+                        mip_level: 0,
+                        origin: Origin3d::ZERO,
+                        aspect: wgpu::TextureAspect::All,
+                    },
+                    Extent3d {
+                        width: render_context.texture.width(),
+                        height: render_context.texture.height(),
+                        depth_or_array_layers: 1,
+                    },
+                );
 
                 render_context
                     .queue
