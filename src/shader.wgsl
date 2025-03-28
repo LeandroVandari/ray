@@ -1,4 +1,4 @@
-
+@group(0) @binding(0) var texture: texture_storage_2d<rgba32float, write>
 
 struct Sphere {
     @builtin(position) center: vec4<f32>,

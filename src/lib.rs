@@ -49,6 +49,7 @@ impl<'window> ApplicationHandler for App<'window> {
                     });
 
                     compute_pass.set_pipeline(&render_context.compute_pipeline);
+                    compute_pass.set_bind_group(0, &render_context.bind_group, &[]);
                 }
 
                 {

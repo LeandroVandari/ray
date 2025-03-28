@@ -2,10 +2,12 @@ use std::sync::Arc;
 
 use anyhow::{Result, bail};
 use wgpu::{
-    Adapter, Backends, ComputePipeline, ComputePipelineDescriptor, Device, DeviceDescriptor,
-    Instance, InstanceDescriptor, PipelineCompilationOptions, PipelineLayoutDescriptor, Queue,
-    RequestAdapterOptions, Surface, SurfaceConfiguration, Texture, TextureDescriptor,
-    TextureUsages,
+    Adapter, Backends, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout,
+    BindGroupLayoutDescriptor, BindGroupLayoutEntry, ComputePipeline, ComputePipelineDescriptor,
+    Device, DeviceDescriptor, Instance, InstanceDescriptor, PipelineCompilationOptions,
+    PipelineLayoutDescriptor, Queue, RequestAdapterOptions, ShaderStages, Surface,
+    SurfaceConfiguration, Texture, TextureDescriptor, TextureSampleType, TextureUsages,
+    TextureView, TextureViewDescriptor,
 };
 use winit::window::{Window, WindowAttributes};
 
@@ -19,7 +21,8 @@ pub struct RenderContext<'window> {
     pub(crate) queue: Queue,
     pub(crate) config: SurfaceConfiguration,
     pub(crate) compute_pipeline: ComputePipeline,
-    pub(crate) textures: (Texture, Texture),
+    pub(crate) texture: Texture,
+    pub(crate) bind_group: BindGroup,
 }
 
 impl<'window> RenderContext<'window> {
@@ -48,9 +51,12 @@ impl<'window> RenderContext<'window> {
         let config = Self::create_surface_configuration(&surface, &adapter, &window);
         surface.configure(&device, &config);
 
-        let compute_pipeline = Self::create_pipeline(&device);
+        let texture = Self::create_textures(&device);
+        let texture_view = texture.create_view(&TextureViewDescriptor::default());
 
-        let textures = Self::create_textures(&device);
+        let bind_group_layout = Self::create_bind_group_layout(&device);
+        let bind_group = Self::create_bind_group(&device, &bind_group_layout, &texture_view);
+        let compute_pipeline = Self::create_pipeline(&device, &bind_group_layout);
 
         Ok(Self {
             surface,
@@ -59,7 +65,8 @@ impl<'window> RenderContext<'window> {
             queue,
             config,
             compute_pipeline,
-            textures,
+            texture,
+            bind_group,
         })
     }
 
@@ -108,7 +115,7 @@ impl<'window> RenderContext<'window> {
         }
     }
 
-    fn create_pipeline(device: &Device) -> ComputePipeline {
+    fn create_pipeline(device: &Device, bind_group_layout: &BindGroupLayout) -> ComputePipeline {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
@@ -116,7 +123,7 @@ impl<'window> RenderContext<'window> {
 
         let compute_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: Some("Compute Pipeline Layout"),
-            bind_group_layouts: &[],
+            bind_group_layouts: &[bind_group_layout],
             push_constant_ranges: &[],
         });
 
@@ -130,7 +137,7 @@ impl<'window> RenderContext<'window> {
         })
     }
 
-    fn create_textures(device: &Device) -> (Texture, Texture) {
+    fn create_textures(device: &Device) -> Texture {
         let texture_size = wgpu::Extent3d {
             width: WIDTH,
             height: HEIGHT,
@@ -150,6 +157,39 @@ impl<'window> RenderContext<'window> {
             view_formats: &[],
         });
 
-        (texture.clone(), texture)
+        texture
+    }
+
+    fn create_bind_group_layout(device: &Device) -> BindGroupLayout {
+        device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+            entries: &[BindGroupLayoutEntry {
+                binding: 0,
+                visibility: ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::Texture {
+                    sample_type: TextureSampleType::Float { filterable: true },
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    multisampled: false,
+                },
+                count: None,
+            }],
+            label: Some("texture_bind_group_layout"),
+        })
+    }
+
+    fn create_bind_group(
+        device: &Device,
+        texture_bind_group_layout: &BindGroupLayout,
+        texture_view: &TextureView,
+    ) -> BindGroup {
+        let texture_bind_group = device.create_bind_group(&BindGroupDescriptor {
+            label: Some("texture_bind_group"),
+            layout: &texture_bind_group_layout,
+            entries: &[BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(&texture_view),
+            }],
+        });
+
+        texture_bind_group
     }
 }
