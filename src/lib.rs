@@ -4,7 +4,6 @@ use wgpu::{
 };
 use winit::{application::ApplicationHandler, event::WindowEvent};
 mod render_context;
-use pollster::FutureExt as _;
 use render_context::RenderContext;
 
 #[derive(Default)]

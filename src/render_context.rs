@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use anyhow::{Result, bail};
 use wgpu::{
-    Adapter, Backends, Device, DeviceDescriptor, Instance, InstanceDescriptor, Queue,
+    Adapter, Backends, ComputePipeline, ComputePipelineDescriptor, Device, DeviceDescriptor,
+    Instance, InstanceDescriptor, PipelineCompilationOptions, PipelineLayoutDescriptor, Queue,
     RequestAdapterOptions, Surface, SurfaceConfiguration, TextureUsages,
 };
 use winit::window::{Window, WindowAttributes};
@@ -13,6 +14,7 @@ pub struct RenderContext<'window> {
     pub(crate) device: Device,
     pub(crate) queue: Queue,
     pub(crate) config: SurfaceConfiguration,
+    pub(crate) compute_pipeline: ComputePipeline,
 }
 
 impl<'window> RenderContext<'window> {
@@ -41,12 +43,15 @@ impl<'window> RenderContext<'window> {
         let config = Self::create_surface_configuration(&surface, &adapter, &window);
         surface.configure(&device, &config);
 
+        let compute_pipeline = Self::create_pipeline(&device);
+
         Ok(Self {
             surface,
             window,
             device,
             queue,
             config,
+            compute_pipeline,
         })
     }
 
@@ -93,5 +98,27 @@ impl<'window> RenderContext<'window> {
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
         }
+    }
+
+    fn create_pipeline(device: &Device) -> ComputePipeline {
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("shader"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
+        });
+
+        let compute_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
+            label: Some("Compute Pipeline Layout"),
+            bind_group_layouts: &[],
+            push_constant_ranges: &[],
+        });
+
+        device.create_compute_pipeline(&ComputePipelineDescriptor {
+            label: Some("Compute Pipeline"),
+            layout: Some(&compute_pipeline_layout),
+            module: &shader,
+            entry_point: Some("main"),
+            compilation_options: PipelineCompilationOptions::default(),
+            cache: None,
+        })
     }
 }
