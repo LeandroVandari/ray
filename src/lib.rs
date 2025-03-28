@@ -1,6 +1,6 @@
 use wgpu::{
-    Color, CommandEncoderDescriptor, RenderPassColorAttachment, RenderPassDescriptor,
-    TextureViewDescriptor,
+    Color, CommandEncoderDescriptor, ComputePassDescriptor, RenderPassColorAttachment,
+    RenderPassDescriptor, TextureViewDescriptor,
 };
 use winit::{application::ApplicationHandler, event::WindowEvent};
 mod render_context;
@@ -39,8 +39,18 @@ impl<'window> ApplicationHandler for App<'window> {
                     render_context
                         .device
                         .create_command_encoder(&CommandEncoderDescriptor {
-                            label: Some("Render Enconder"),
+                            label: Some("Command Enconder"),
                         });
+
+                {
+                    let mut compute_pass = encoder.begin_compute_pass(&ComputePassDescriptor {
+                        label: Some("Compute Pass"),
+                        timestamp_writes: None,
+                    });
+
+                    compute_pass.set_pipeline(&render_context.compute_pipeline);
+                }
+
                 {
                     let _render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
                         label: Some("Render Pass"),

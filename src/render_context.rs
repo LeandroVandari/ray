@@ -4,9 +4,13 @@ use anyhow::{Result, bail};
 use wgpu::{
     Adapter, Backends, ComputePipeline, ComputePipelineDescriptor, Device, DeviceDescriptor,
     Instance, InstanceDescriptor, PipelineCompilationOptions, PipelineLayoutDescriptor, Queue,
-    RequestAdapterOptions, Surface, SurfaceConfiguration, TextureUsages,
+    RequestAdapterOptions, Surface, SurfaceConfiguration, Texture, TextureDescriptor,
+    TextureUsages,
 };
 use winit::window::{Window, WindowAttributes};
+
+const WIDTH: u32 = 160;
+const HEIGHT: u32 = 90;
 
 pub struct RenderContext<'window> {
     pub(crate) window: Arc<Window>,
@@ -15,6 +19,7 @@ pub struct RenderContext<'window> {
     pub(crate) queue: Queue,
     pub(crate) config: SurfaceConfiguration,
     pub(crate) compute_pipeline: ComputePipeline,
+    pub(crate) textures: (Texture, Texture),
 }
 
 impl<'window> RenderContext<'window> {
@@ -45,6 +50,8 @@ impl<'window> RenderContext<'window> {
 
         let compute_pipeline = Self::create_pipeline(&device);
 
+        let textures = Self::create_textures(&device);
+
         Ok(Self {
             surface,
             window,
@@ -52,6 +59,7 @@ impl<'window> RenderContext<'window> {
             queue,
             config,
             compute_pipeline,
+            textures,
         })
     }
 
@@ -120,5 +128,28 @@ impl<'window> RenderContext<'window> {
             compilation_options: PipelineCompilationOptions::default(),
             cache: None,
         })
+    }
+
+    fn create_textures(device: &Device) -> (Texture, Texture) {
+        let texture_size = wgpu::Extent3d {
+            width: WIDTH,
+            height: HEIGHT,
+            depth_or_array_layers: 1,
+        };
+
+        let texture = device.create_texture(&TextureDescriptor {
+            label: Some("Rendered image"),
+            size: texture_size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: TextureUsages::TEXTURE_BINDING
+                | TextureUsages::COPY_DST
+                | TextureUsages::STORAGE_BINDING,
+            view_formats: &[],
+        });
+
+        (texture.clone(), texture)
     }
 }
