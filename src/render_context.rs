@@ -6,8 +6,8 @@ use wgpu::{
     BindGroupLayoutDescriptor, BindGroupLayoutEntry, ComputePipeline, ComputePipelineDescriptor,
     Device, DeviceDescriptor, Features, Instance, InstanceDescriptor, PipelineCompilationOptions,
     PipelineLayoutDescriptor, Queue, RequestAdapterOptions, ShaderStages, Surface,
-    SurfaceConfiguration, Texture, TextureDescriptor, TextureSampleType, TextureUsages,
-    TextureView, TextureViewDescriptor,
+    SurfaceConfiguration, Texture, TextureDescriptor, TextureUsages, TextureView,
+    TextureViewDescriptor,
 };
 use winit::window::{Window, WindowAttributes};
 
@@ -134,7 +134,7 @@ impl<'window> RenderContext<'window> {
             label: Some("Compute Pipeline"),
             layout: Some(&compute_pipeline_layout),
             module: &shader,
-            entry_point: Some("main"),
+            entry_point: Some("main_compute"),
             compilation_options: PipelineCompilationOptions::default(),
             cache: None,
         })

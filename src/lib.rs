@@ -1,7 +1,5 @@
 use wgpu::{
-    Color, CommandEncoderDescriptor, ComputePassDescriptor, Extent3d, Origin3d,
-    RenderPassColorAttachment, RenderPassDescriptor, TexelCopyTextureInfoBase,
-    TextureViewDescriptor,
+    CommandEncoderDescriptor, ComputePassDescriptor, Extent3d, Origin3d, TexelCopyTextureInfoBase,
 };
 use winit::{application::ApplicationHandler, event::WindowEvent};
 mod render_context;
@@ -34,9 +32,6 @@ impl<'window> ApplicationHandler for App<'window> {
                 let render_context = self.render_context.as_ref().unwrap();
 
                 let output = render_context.surface.get_current_texture().unwrap();
-                let view = output
-                    .texture
-                    .create_view(&TextureViewDescriptor::default());
 
                 let mut encoder =
                     render_context
@@ -44,7 +39,6 @@ impl<'window> ApplicationHandler for App<'window> {
                         .create_command_encoder(&CommandEncoderDescriptor {
                             label: Some("Command Enconder"),
                         });
-
                 {
                     let mut compute_pass = encoder.begin_compute_pass(&ComputePassDescriptor {
                         label: Some("Compute Pass"),
@@ -53,26 +47,11 @@ impl<'window> ApplicationHandler for App<'window> {
 
                     compute_pass.set_pipeline(&render_context.compute_pipeline);
                     compute_pass.set_bind_group(0, &render_context.bind_group, &[]);
-                }
-
-                {
-                    let _render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
-                        label: Some("Render Pass"),
-                        color_attachments: &[Some(RenderPassColorAttachment {
-                            view: &view,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(Color {
-                                    r: 0.1,
-                                    g: 0.2,
-                                    b: 0.3,
-                                    a: 1.0,
-                                }),
-                                store: wgpu::StoreOp::Store,
-                            },
-                        })],
-                        ..Default::default()
-                    });
+                    compute_pass.dispatch_workgroups(
+                        render_context.texture.width() / 8 + 1,
+                        render_context.texture.height() / 8 + 1,
+                        1,
+                    );
                 }
 
                 encoder.copy_texture_to_texture(
