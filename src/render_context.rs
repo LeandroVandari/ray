@@ -3,11 +3,12 @@ use std::sync::Arc;
 use anyhow::{Result, bail};
 use wgpu::{
     Adapter, Backends, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout,
-    BindGroupLayoutDescriptor, BindGroupLayoutEntry, ComputePipeline, ComputePipelineDescriptor,
-    Device, DeviceDescriptor, Features, Instance, InstanceDescriptor, PipelineCompilationOptions,
-    PipelineLayoutDescriptor, Queue, RequestAdapterOptions, ShaderStages, Surface,
-    SurfaceConfiguration, Texture, TextureDescriptor, TextureUsages, TextureView,
-    TextureViewDescriptor,
+    BindGroupLayoutDescriptor, BindGroupLayoutEntry, Buffer, BufferBinding, BufferUsages,
+    ComputePipeline, ComputePipelineDescriptor, Device, DeviceDescriptor, Features, Instance,
+    InstanceDescriptor, PipelineCompilationOptions, PipelineLayoutDescriptor, Queue,
+    RequestAdapterOptions, ShaderStages, Surface, SurfaceConfiguration, Texture, TextureDescriptor,
+    TextureUsages, TextureView, TextureViewDescriptor,
+    util::{BufferInitDescriptor, DeviceExt},
 };
 use winit::window::{Window, WindowAttributes};
 
@@ -56,8 +57,15 @@ impl RenderContext<'_> {
         let texture = Self::create_textures(&device, &window);
         let texture_view = texture.create_view(&TextureViewDescriptor::default());
 
+        let obj_buffer = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("Objects Buffer"),
+            usage: BufferUsages::STORAGE,
+            contents: todo!(),
+        });
+
         let bind_group_layout = Self::create_bind_group_layout(&device);
-        let bind_group = Self::create_bind_group(&device, &bind_group_layout, &texture_view);
+        let bind_group =
+            Self::create_bind_group(&device, &bind_group_layout, &texture_view, &obj_buffer);
         let compute_pipeline = Self::create_pipeline(&device, &bind_group_layout);
 
         Ok(Self {
@@ -164,16 +172,28 @@ impl RenderContext<'_> {
 
     fn create_bind_group_layout(device: &Device) -> BindGroupLayout {
         device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-            entries: &[BindGroupLayoutEntry {
-                binding: 0,
-                visibility: ShaderStages::COMPUTE,
-                ty: wgpu::BindingType::StorageTexture {
-                    access: wgpu::StorageTextureAccess::WriteOnly,
-                    format: wgpu::TextureFormat::Bgra8Unorm,
-                    view_dimension: wgpu::TextureViewDimension::D2,
+            entries: &[
+                BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::StorageTexture {
+                        access: wgpu::StorageTextureAccess::WriteOnly,
+                        format: wgpu::TextureFormat::Bgra8Unorm,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                    },
+                    count: None,
                 },
-                count: None,
-            }],
+                BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+            ],
             label: Some("texture_bind_group_layout"),
         })
     }
@@ -182,14 +202,25 @@ impl RenderContext<'_> {
         device: &Device,
         texture_bind_group_layout: &BindGroupLayout,
         texture_view: &TextureView,
+        obj_buffer: &Buffer,
     ) -> BindGroup {
         let texture_bind_group = device.create_bind_group(&BindGroupDescriptor {
             label: Some("texture_bind_group"),
             layout: texture_bind_group_layout,
-            entries: &[BindGroupEntry {
-                binding: 0,
-                resource: wgpu::BindingResource::TextureView(texture_view),
-            }],
+            entries: &[
+                BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(texture_view),
+                },
+                BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Buffer(BufferBinding {
+                        buffer: obj_buffer,
+                        offset: 0,
+                        size: None,
+                    }),
+                },
+            ],
         });
 
         texture_bind_group
