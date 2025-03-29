@@ -2,8 +2,11 @@ use wgpu::{
     CommandEncoderDescriptor, ComputePassDescriptor, Extent3d, Origin3d, TexelCopyTextureInfoBase,
 };
 use winit::{application::ApplicationHandler, event::WindowEvent};
+
 mod render_context;
 use render_context::RenderContext;
+
+mod objects;
 
 #[derive(Default)]
 pub struct App<'window> {

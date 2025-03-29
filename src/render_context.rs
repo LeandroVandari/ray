@@ -12,6 +12,8 @@ use wgpu::{
 };
 use winit::window::{Window, WindowAttributes};
 
+use crate::objects;
+
 pub struct RenderContext<'window> {
     pub(crate) window: Arc<Window>,
     pub(crate) surface: Surface<'window>,
@@ -21,6 +23,7 @@ pub struct RenderContext<'window> {
     pub(crate) compute_pipeline: ComputePipeline,
     pub(crate) texture: Texture,
     pub(crate) bind_group: BindGroup,
+    pub(crate) sphere_buffer: Buffer,
 }
 
 impl RenderContext<'_> {
@@ -57,15 +60,11 @@ impl RenderContext<'_> {
         let texture = Self::create_textures(&device, &window);
         let texture_view = texture.create_view(&TextureViewDescriptor::default());
 
-        let obj_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("Objects Buffer"),
-            usage: BufferUsages::STORAGE,
-            contents: todo!(),
-        });
+        let sphere_buffer = Self::create_sphere_buffer(&device);
 
         let bind_group_layout = Self::create_bind_group_layout(&device);
         let bind_group =
-            Self::create_bind_group(&device, &bind_group_layout, &texture_view, &obj_buffer);
+            Self::create_bind_group(&device, &bind_group_layout, &texture_view, &sphere_buffer);
         let compute_pipeline = Self::create_pipeline(&device, &bind_group_layout);
 
         Ok(Self {
@@ -77,6 +76,7 @@ impl RenderContext<'_> {
             compute_pipeline,
             texture,
             bind_group,
+            sphere_buffer,
         })
     }
 
@@ -202,7 +202,7 @@ impl RenderContext<'_> {
         device: &Device,
         texture_bind_group_layout: &BindGroupLayout,
         texture_view: &TextureView,
-        obj_buffer: &Buffer,
+        sphere_buffer: &Buffer,
     ) -> BindGroup {
         let texture_bind_group = device.create_bind_group(&BindGroupDescriptor {
             label: Some("texture_bind_group"),
@@ -215,7 +215,7 @@ impl RenderContext<'_> {
                 BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::Buffer(BufferBinding {
-                        buffer: obj_buffer,
+                        buffer: sphere_buffer,
                         offset: 0,
                         size: None,
                     }),
@@ -224,5 +224,15 @@ impl RenderContext<'_> {
         });
 
         texture_bind_group
+    }
+
+    fn create_sphere_buffer(device: &Device) -> Buffer {
+        let spheres = [objects::Sphere::new([0.0, 0.0, 0.0], 1.0)];
+
+        device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("Objects Buffer"),
+            usage: BufferUsages::STORAGE,
+            contents: bytemuck::cast_slice(&spheres),
+        })
     }
 }
