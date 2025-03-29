@@ -6,7 +6,6 @@ use wgpu::{
 use winit::{application::ApplicationHandler, event::WindowEvent};
 mod render_context;
 use render_context::RenderContext;
-use render_context::{HEIGHT, WIDTH};
 
 #[derive(Default)]
 pub struct App<'window> {
@@ -27,6 +26,8 @@ impl<'window> ApplicationHandler for App<'window> {
         match event {
             WindowEvent::CloseRequested => {
                 event_loop.exit();
+                let render_context = self.render_context.take().unwrap();
+                drop(render_context);
             }
 
             WindowEvent::RedrawRequested => {

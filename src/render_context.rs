@@ -11,9 +11,6 @@ use wgpu::{
 };
 use winit::window::{Window, WindowAttributes};
 
-pub const WIDTH: u32 = 160;
-pub const HEIGHT: u32 = 90;
-
 pub struct RenderContext<'window> {
     pub(crate) window: Arc<Window>,
     pub(crate) surface: Surface<'window>,
@@ -57,7 +54,7 @@ impl<'window> RenderContext<'window> {
         let config = Self::create_surface_configuration(&surface, &adapter, &window);
         surface.configure(&device, &config);
 
-        let texture = Self::create_textures(&device);
+        let texture = Self::create_textures(&device, &window);
         let texture_view = texture.create_view(&TextureViewDescriptor::default());
 
         let bind_group_layout = Self::create_bind_group_layout(&device);
@@ -110,7 +107,7 @@ impl<'window> RenderContext<'window> {
             .unwrap_or(surface_caps.formats[0]);
         let size = window.inner_size();
         SurfaceConfiguration {
-            usage: TextureUsages::RENDER_ATTACHMENT,
+            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_DST,
             format: surface_format,
             width: size.width,
             height: size.height,
@@ -143,10 +140,11 @@ impl<'window> RenderContext<'window> {
         })
     }
 
-    fn create_textures(device: &Device) -> Texture {
+    fn create_textures(device: &Device, window: &Window) -> Texture {
+        let size = window.inner_size();
         let texture_size = wgpu::Extent3d {
-            width: WIDTH,
-            height: HEIGHT,
+            width: size.width,
+            height: size.height,
             depth_or_array_layers: 1,
         };
 

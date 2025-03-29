@@ -12,10 +12,5 @@ fn main(
 ) {
     let location = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
 
-    textureStore(texture, location, vec4<f32>(1.0));
-}
-
-@fragment
-fn output_texture() {
-    
+    textureStore(texture, location, vec4<f32>(1.0, 0.0, 0.0, 1.0));
 }
