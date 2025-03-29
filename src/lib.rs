@@ -10,7 +10,7 @@ pub struct App<'window> {
     render_context: Option<RenderContext<'window>>,
 }
 
-impl<'window> ApplicationHandler for App<'window> {
+impl ApplicationHandler for App<'_> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         self.render_context = Some(pollster::block_on(RenderContext::new(event_loop)).unwrap());
     }

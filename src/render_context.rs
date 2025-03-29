@@ -22,7 +22,7 @@ pub struct RenderContext<'window> {
     pub(crate) bind_group: BindGroup,
 }
 
-impl<'window> RenderContext<'window> {
+impl RenderContext<'_> {
     pub async fn new(event_loop: &winit::event_loop::ActiveEventLoop) -> Result<Self> {
         let instance = Self::create_instance();
 
@@ -30,15 +30,14 @@ impl<'window> RenderContext<'window> {
 
         let surface = instance.create_surface(window.clone())?;
 
-        let adapter = match instance
+        let Some(adapter) = instance
             .request_adapter(&RequestAdapterOptions {
                 compatible_surface: Some(&surface),
                 ..Default::default()
             })
             .await
-        {
-            Some(adapter) => adapter,
-            None => bail!("Couldn't create adapter."),
+        else {
+            bail!("Couldn't create adapter.")
         };
 
         let (device, queue) = adapter
@@ -62,8 +61,8 @@ impl<'window> RenderContext<'window> {
         let compute_pipeline = Self::create_pipeline(&device, &bind_group_layout);
 
         Ok(Self {
-            surface,
             window,
+            surface,
             device,
             queue,
             config,
@@ -148,7 +147,7 @@ impl<'window> RenderContext<'window> {
             depth_or_array_layers: 1,
         };
 
-        let texture = device.create_texture(&TextureDescriptor {
+        device.create_texture(&TextureDescriptor {
             label: Some("Rendered image"),
             size: texture_size,
             mip_level_count: 1,
@@ -160,9 +159,7 @@ impl<'window> RenderContext<'window> {
                 | TextureUsages::STORAGE_BINDING
                 | TextureUsages::COPY_SRC,
             view_formats: &[],
-        });
-
-        texture
+        })
     }
 
     fn create_bind_group_layout(device: &Device) -> BindGroupLayout {
@@ -188,10 +185,10 @@ impl<'window> RenderContext<'window> {
     ) -> BindGroup {
         let texture_bind_group = device.create_bind_group(&BindGroupDescriptor {
             label: Some("texture_bind_group"),
-            layout: &texture_bind_group_layout,
+            layout: texture_bind_group_layout,
             entries: &[BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::TextureView(&texture_view),
+                resource: wgpu::BindingResource::TextureView(texture_view),
             }],
         });
 
