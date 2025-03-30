@@ -227,7 +227,7 @@ impl RenderContext<'_> {
     }
 
     fn create_sphere_buffer(device: &Device) -> Buffer {
-        let spheres = [objects::Sphere::new([0.0, 0.0, 0.0], 1.0)];
+        let spheres = [objects::Sphere::new([0.0, 0.0, -1.0], 1.0)];
 
         device.create_buffer_init(&BufferInitDescriptor {
             label: Some("Objects Buffer"),
