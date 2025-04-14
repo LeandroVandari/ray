@@ -14,6 +14,10 @@ struct Ray {
 fn ray_at(ray: Ray, t: f32) -> vec3<f32>{
     return ray.origin + ray.direction*t;
 }
+fn length_squared(vector: vec3<f32>) -> f32 {
+    return pow(vector.x,2.) + pow(vector.y,2.) + pow(vector.z,2.);
+}
+
 
 struct Camera {
     pix0_coord: vec3<f32>,
@@ -54,8 +58,11 @@ fn main_compute(
 
 fn ray_color(ray: Ray) -> vec3<f32> {
     for (var i=0u ;i<arrayLength(&spheres);i++) {
-        if hit_sphere(spheres[i], ray) {
-            return vec3(1.0, 0.0, 0.0);
+        let t = hit_sphere(spheres[i], ray);
+
+        if (t > 0.0) {
+            let normal = normalize(ray_at(ray, t) - spheres[i].center);
+            return 0.5*vec3(normal + 1.);
         }
     }
     
@@ -67,15 +74,20 @@ fn ray_color(ray: Ray) -> vec3<f32> {
 
 }
 
-fn hit_sphere(sphere: Sphere, ray: Ray) -> bool {
+fn hit_sphere(sphere: Sphere, ray: Ray) -> f32 {
     let oc = sphere.center - ray.origin;
-    let a = dot(ray.direction, ray.direction);
-    let b = -2.0 * dot(ray.direction, oc);
-    let c = dot(oc, oc) - sphere.radius * sphere.radius;
+    let a = length_squared(ray.direction);
+    let h = dot(ray.direction, oc);
+    let c = length_squared(oc) - pow(sphere.radius,2.);
 
-    let discriminant = b*b - 4.0*a*c;
+    let discriminant = h*h - a*c;
 
-    return (discriminant >= 0);
+    if (discriminant < 0) {
+        return -1.0;
+    }
+    else {
+        return (h-sqrt(discriminant))/a;
+    }
 }
 
 
