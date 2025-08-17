@@ -111,7 +111,11 @@ impl RenderContext<'_> {
             .iter()
             .find(|f| **f == wgpu::TextureFormat::Rgba8Unorm)
             .copied()
-            .unwrap_or(surface_caps.formats[0]);
+            .unwrap_or_else(|| {
+                let format = surface_caps.formats[0];
+                log::warn!("Couldn't get surface format Rgba8Unorm, using {format:?}");
+                format
+            });
 
         let size = window.inner_size();
         SurfaceConfiguration {

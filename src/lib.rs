@@ -1,3 +1,4 @@
+use log::info;
 use wgpu::{
     CommandEncoderDescriptor, ComputePassDescriptor, Extent3d, Origin3d, TexelCopyTextureInfoBase,
 };
@@ -26,6 +27,7 @@ impl ApplicationHandler for App<'_> {
     ) {
         match event {
             WindowEvent::CloseRequested => {
+                info!("Exiting window");
                 event_loop.exit();
                 let render_context = self.render_context.take().unwrap();
                 drop(render_context);
@@ -56,7 +58,6 @@ impl ApplicationHandler for App<'_> {
                         1,
                     );
                 }
-
                 encoder.copy_texture_to_texture(
                     wgpu::TexelCopyTextureInfoBase {
                         texture: &render_context.texture,
