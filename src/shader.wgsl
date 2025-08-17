@@ -1,4 +1,4 @@
-@group(0) @binding(0) var texture: texture_storage_2d<bgra8unorm, write>;
+@group(0) @binding(0) var texture: texture_storage_2d<rgba8unorm, write>;
 @group(0) @binding(1) var<storage, read> spheres: array<Sphere>;
 
 struct Sphere {

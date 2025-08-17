@@ -47,7 +47,7 @@ impl RenderContext<'_> {
         let (device, queue) = adapter
             .request_device(
                 &DeviceDescriptor {
-                    required_features: Features::BGRA8UNORM_STORAGE,
+                    required_features: Features::empty(),
                     ..Default::default()
                 },
                 None,
@@ -109,9 +109,10 @@ impl RenderContext<'_> {
         let surface_format = surface_caps
             .formats
             .iter()
-            .find(|f| f.is_srgb())
+            .find(|f| **f == wgpu::TextureFormat::Rgba8Unorm)
             .copied()
             .unwrap_or(surface_caps.formats[0]);
+
         let size = window.inner_size();
         SurfaceConfiguration {
             usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_DST,
@@ -161,7 +162,7 @@ impl RenderContext<'_> {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Bgra8Unorm,
+            format: wgpu::TextureFormat::Rgba8Unorm,
             usage: TextureUsages::TEXTURE_BINDING
                 | TextureUsages::COPY_DST
                 | TextureUsages::STORAGE_BINDING
@@ -178,7 +179,7 @@ impl RenderContext<'_> {
                     visibility: ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::StorageTexture {
                         access: wgpu::StorageTextureAccess::WriteOnly,
-                        format: wgpu::TextureFormat::Bgra8Unorm,
+                        format: wgpu::TextureFormat::Rgba8Unorm,
                         view_dimension: wgpu::TextureViewDimension::D2,
                     },
                     count: None,
