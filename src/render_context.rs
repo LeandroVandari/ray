@@ -163,10 +163,7 @@ impl RenderContext<'_> {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: TextureUsages::TEXTURE_BINDING
-                | TextureUsages::COPY_DST
-                | TextureUsages::STORAGE_BINDING
-                | TextureUsages::COPY_SRC,
+            usage: TextureUsages::STORAGE_BINDING | TextureUsages::COPY_SRC,
             view_formats: &[],
         })
     }
