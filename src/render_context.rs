@@ -27,7 +27,10 @@ pub struct RenderContext<'window> {
 }
 
 impl RenderContext<'_> {
-    pub async fn new(event_loop: &winit::event_loop::ActiveEventLoop) -> Result<Self> {
+    pub async fn new(
+        event_loop: &winit::event_loop::ActiveEventLoop,
+        spheres: &[objects::Sphere],
+    ) -> Result<Self> {
         let instance = Self::create_instance();
 
         let window = Arc::new(Self::create_window(event_loop)?);
@@ -60,7 +63,7 @@ impl RenderContext<'_> {
         let texture = Self::create_textures(&device, &window);
         let texture_view = texture.create_view(&TextureViewDescriptor::default());
 
-        let sphere_buffer = Self::create_sphere_buffer(&device);
+        let sphere_buffer = Self::create_sphere_buffer(&device, spheres);
 
         let bind_group_layout = Self::create_bind_group_layout(&device);
         let bind_group =
@@ -236,9 +239,7 @@ impl RenderContext<'_> {
         texture_bind_group
     }
 
-    fn create_sphere_buffer(device: &Device) -> Buffer {
-        let spheres = [objects::Sphere::new([0.0, 0.0, -1.0], 0.5)];
-
+    fn create_sphere_buffer(device: &Device, spheres: &[objects::Sphere]) -> Buffer {
         device.create_buffer_init(&BufferInitDescriptor {
             label: Some("Objects Buffer"),
             usage: BufferUsages::STORAGE,

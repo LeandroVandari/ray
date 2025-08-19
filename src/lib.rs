@@ -7,16 +7,26 @@ use winit::{application::ApplicationHandler, event::WindowEvent};
 mod render_context;
 use render_context::RenderContext;
 
-mod objects;
+pub mod objects;
 
-#[derive(Default)]
 pub struct App<'window> {
     render_context: Option<RenderContext<'window>>,
+    spheres: Vec<objects::Sphere>,
+}
+
+impl App<'_> {
+    pub fn new(spheres: Vec<objects::Sphere>) -> Self {
+        Self {
+            render_context: None,
+            spheres,
+        }
+    }
 }
 
 impl ApplicationHandler for App<'_> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        self.render_context = Some(pollster::block_on(RenderContext::new(event_loop)).unwrap());
+        self.render_context =
+            Some(pollster::block_on(RenderContext::new(event_loop, &self.spheres)).unwrap());
     }
 
     fn window_event(

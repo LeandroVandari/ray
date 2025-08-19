@@ -5,7 +5,8 @@ fn main() {
 
     let event_loop = EventLoop::new().unwrap();
     event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
-    let mut app = ray::App::default();
+    let spheres = vec![ray::objects::Sphere::new([0.0, 0.0, -1.0], 0.5)];
+    let mut app = ray::App::new(spheres);
 
     event_loop.run_app(&mut app).unwrap();
 }
