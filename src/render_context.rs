@@ -133,7 +133,15 @@ impl RenderContext<'_> {
     fn create_pipeline(device: &Device, bind_group_layout: &BindGroupLayout) -> ComputePipeline {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(
+                concat!(
+                    include_str!("shaders/sphere.wgsl"),
+                    include_str!("shaders/ray.wgsl"),
+                    include_str!("shaders/camera.wgsl"),
+                    include_str!("shaders/main.wgsl")
+                )
+                .into(),
+            ),
         });
 
         let compute_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
