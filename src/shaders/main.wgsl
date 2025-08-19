@@ -32,13 +32,9 @@ fn main_compute(
 
 
 fn ray_color(ray: Ray) -> vec3<f32> {
-    for (var i = 0u ; i < arrayLength(&spheres); i++) {
-        let t = hit_sphere(spheres[i], ray);
-
-        if t > 0.0 {
-            let normal = normalize(ray_at(ray, t) - spheres[i].center);
-            return 0.5 * vec3(normal + 1.);
-        }
+    var hit_record = HitRecord();
+    if closest_hit(ray, 0, 0x1.fffffep+127f, &hit_record) {
+        return 0.5 * (hit_record.normal + vec3(1.0, 1.0, 1.0));
     }
 
 
@@ -46,4 +42,20 @@ fn ray_color(ray: Ray) -> vec3<f32> {
 
     let a = 0.5 * (unit_direction.y + 1.0);
     return (1.0 - a) * vec3<f32>(1.0) + a * vec3<f32>(0.5, 0.7, 1.0);
+}
+
+fn closest_hit(ray: Ray, t_min: f32, t_max: f32, hit_record: ptr<function, HitRecord>) -> bool {
+    var temp_rec = HitRecord();
+    var hit_anything = false;
+    var closest_so_far = t_max;
+
+    for (var i = 0u; i < arrayLength(&spheres); i++) {
+        if hit_sphere(spheres[i], ray, t_min, closest_so_far, &temp_rec) {
+            hit_anything = true;
+            closest_so_far = temp_rec.t;
+            *hit_record = temp_rec;
+        }
+    }
+
+    return hit_anything;
 }

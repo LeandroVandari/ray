@@ -140,6 +140,7 @@ impl RenderContext<'_> {
                 concat!(
                     include_str!("shaders/sphere.wgsl"),
                     include_str!("shaders/ray.wgsl"),
+                    include_str!("shaders/hit_record.wgsl"),
                     include_str!("shaders/camera.wgsl"),
                     include_str!("shaders/main.wgsl")
                 )
