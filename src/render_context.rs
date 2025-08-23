@@ -14,6 +14,11 @@ use winit::window::{Window, WindowAttributes};
 
 use crate::objects;
 
+pub enum RenderMode {
+    Compatibility,
+    ToTexture
+}
+
 pub struct RenderContext<'window> {
     pub(crate) window: Arc<Window>,
     pub(crate) surface: Surface<'window>,
@@ -108,7 +113,12 @@ impl RenderContext<'_> {
         window: &Window,
     ) -> SurfaceConfiguration {
         let surface_caps = surface.get_capabilities(adapter);
-
+        let usage = if surface_caps.usages.contains(TextureUsages::COPY_DST) {
+            TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_DST
+        } else {
+            log::warn!("Surface can't be copy destination. Using compatibility mode.");
+            TextureUsages::RENDER_ATTACHMENT
+        };
         let surface_format = surface_caps
             .formats
             .iter()
@@ -122,7 +132,7 @@ impl RenderContext<'_> {
 
         let size = window.inner_size();
         SurfaceConfiguration {
-            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_DST,
+            usage,
             format: surface_format,
             width: size.width,
             height: size.height,
