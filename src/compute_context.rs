@@ -123,11 +123,11 @@ impl ComputeContext {
             label: Some("shader"),
             source: wgpu::ShaderSource::Wgsl(
                 concat!(
-                    include_str!("shaders/sphere.wgsl"),
-                    include_str!("shaders/ray.wgsl"),
-                    include_str!("shaders/hit_record.wgsl"),
-                    include_str!("shaders/camera.wgsl"),
-                    include_str!("shaders/main.wgsl")
+                    include_str!("shaders/compute/sphere.wgsl"),
+                    include_str!("shaders/compute/ray.wgsl"),
+                    include_str!("shaders/compute/hit_record.wgsl"),
+                    include_str!("shaders/compute/camera.wgsl"),
+                    include_str!("shaders/compute/main.wgsl")
                 )
                 .into(),
             ),

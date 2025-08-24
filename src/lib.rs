@@ -1,4 +1,3 @@
-use compute_context::ComputeContext;
 use log::info;
 use wgpu::{
     CommandEncoderDescriptor, ComputePassDescriptor, Extent3d, Origin3d, TexelCopyTextureInfoBase,
@@ -8,7 +7,10 @@ use winit::{application::ApplicationHandler, event::WindowEvent};
 
 mod render_manager;
 use render_manager::RenderManager;
+
 mod compute_context;
+use compute_context::ComputeContext;
+mod render_context;
 
 pub mod objects;
 
