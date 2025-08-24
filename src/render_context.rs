@@ -1,22 +1,25 @@
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, Device, FragmentState, MultisampleState, PipelineCompilationOptions,
-    PipelineLayoutDescriptor, PrimitiveState, RenderPipeline, RenderPipelineDescriptor,
-    ShaderModuleDescriptor, ShaderStages, TextureFormat, TextureView, TextureViewDescriptor,
-    VertexState,
+    BindGroupLayoutEntry, ColorTargetState, Device, FragmentState, MultisampleState,
+    PipelineCompilationOptions, PipelineLayoutDescriptor, PrimitiveState, RenderPipeline,
+    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages, TextureFormat, TextureView,
+    TextureViewDescriptor, VertexState,
 };
 
-use crate::compute_context::ComputeContext;
+use crate::{compute_context::ComputeContext, render_manager::RenderManager};
 
 pub struct RenderContext {
-    bind_group: BindGroup,
-    pipeline: RenderPipeline,
+    pub(crate) bind_group: BindGroup,
+    pub(crate) pipeline: RenderPipeline,
 }
 
 impl RenderContext {
-    pub fn new(device: &Device, compute_context: ComputeContext) -> Self {
-        let bind_group_layout =
-            Self::create_bind_group_layout(device, &compute_context.output_texture.format());
+    pub fn new(
+        device: &Device,
+        compute_context: &ComputeContext,
+        render_manager: &RenderManager,
+    ) -> Self {
+        let bind_group_layout = Self::create_bind_group_layout(device);
         let bind_group = Self::create_bind_group(
             device,
             &compute_context
@@ -25,7 +28,7 @@ impl RenderContext {
             &bind_group_layout,
         );
 
-        let pipeline = Self::create_render_pipeline(device, &bind_group_layout);
+        let pipeline = Self::create_render_pipeline(device, &bind_group_layout, render_manager);
 
         Self {
             pipeline,
@@ -33,18 +36,15 @@ impl RenderContext {
         }
     }
 
-    fn create_bind_group_layout(
-        device: &Device,
-        compute_texture_format: &TextureFormat,
-    ) -> BindGroupLayout {
+    fn create_bind_group_layout(device: &Device) -> BindGroupLayout {
         device.create_bind_group_layout(&BindGroupLayoutDescriptor {
             label: Some("Render BindGroupLayout"),
             entries: &[BindGroupLayoutEntry {
                 binding: 0,
                 visibility: ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::StorageTexture {
-                    access: wgpu::StorageTextureAccess::ReadOnly,
-                    format: *compute_texture_format,
+                ty: wgpu::BindingType::Texture {
+                    sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                    multisampled: false,
                     view_dimension: wgpu::TextureViewDimension::D2,
                 },
                 count: None,
@@ -70,6 +70,7 @@ impl RenderContext {
     fn create_render_pipeline(
         device: &Device,
         bind_group_layout: &BindGroupLayout,
+        render_manager: &RenderManager,
     ) -> RenderPipeline {
         let fragment_shader = device.create_shader_module(ShaderModuleDescriptor {
             label: Some("Fragment Shader"),
@@ -93,7 +94,11 @@ impl RenderContext {
                 module: &fragment_shader,
                 entry_point: Some("main_fragment"),
                 compilation_options: PipelineCompilationOptions::default(),
-                targets: &[],
+                targets: &[Some(ColorTargetState {
+                    format: render_manager.config.format,
+                    blend: Some(wgpu::BlendState::REPLACE),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
             }),
             vertex: VertexState {
                 buffers: &[],
@@ -101,9 +106,21 @@ impl RenderContext {
                 module: &vertex_shader,
                 entry_point: Some("main_vertex"),
             },
-            primitive: PrimitiveState::default(),
+            primitive: PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: Some(wgpu::Face::Back),
+                polygon_mode: wgpu::PolygonMode::Fill,
+                unclipped_depth: false,
+                conservative: false,
+            },
             depth_stencil: None,
-            multisample: MultisampleState::default(),
+            multisample: MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
             multiview: None,
             cache: None,
         })

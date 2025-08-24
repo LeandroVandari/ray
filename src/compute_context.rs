@@ -56,7 +56,7 @@ impl ComputeContext {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format,
-            usage: TextureUsages::STORAGE_BINDING | TextureUsages::COPY_SRC,
+            usage: TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         })
     }
