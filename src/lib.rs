@@ -1,8 +1,8 @@
 use log::info;
 use render_context::RenderContext;
 use wgpu::{
-    CommandEncoderDescriptor, ComputePassDescriptor, Extent3d, Origin3d, RenderPassDescriptor,
-    TexelCopyTextureInfoBase, TextureFormat, TextureViewDescriptor,
+    CommandEncoderDescriptor, ComputePassDescriptor, RenderPassDescriptor, TextureFormat,
+    TextureViewDescriptor,
 };
 use winit::{application::ApplicationHandler, event::WindowEvent};
 
@@ -64,14 +64,22 @@ impl ApplicationHandler for App<'_> {
             WindowEvent::CloseRequested => {
                 info!("Exiting window");
                 event_loop.exit();
+                let compute_context = self.compute_context.take().unwrap();
+                drop(compute_context);
+                let render_context = self.render_context.take().unwrap();
+                drop(render_context);
                 let render_manager = self.render_manager.take().unwrap();
                 drop(render_manager);
             }
 
             WindowEvent::RedrawRequested => {
-                let render_manager = self.render_manager.as_ref().unwrap();
-                let compute_context = self.compute_context.as_ref().unwrap();
-                let render_context = self.render_context.as_ref().unwrap();
+                let (Some(render_manager), Some(compute_context), Some(render_context)) = (
+                    self.render_manager.as_ref(),
+                    self.compute_context.as_ref(),
+                    self.render_context.as_ref(),
+                ) else {
+                    return;
+                };
 
                 let output = render_manager.surface.get_current_texture().unwrap();
 
