@@ -7,20 +7,59 @@ use wgpu::{
 };
 use winit::window::{Window, WindowAttributes};
 
-pub struct RenderManager<'window> {
-    pub(crate) window: Arc<Window>,
-    pub(crate) surface: Surface<'window>,
-    pub(crate) device: Device,
-    pub(crate) queue: Queue,
-    pub(crate) config: SurfaceConfiguration,
+pub struct GpuManager<SurfaceManager = ()> {
+    surface_manager: SurfaceManager,
+    device: Device,
+    queue: Queue,
 }
 
-impl RenderManager<'_> {
-    pub async fn new(event_loop: &winit::event_loop::ActiveEventLoop) -> Result<Self> {
+impl<SurfaceManager> GpuManager<SurfaceManager> {
+    pub fn device(&self) -> &Device {
+        &self.device
+    }
+
+    pub fn queue(&self) -> &Queue {
+        &self.queue
+    }
+
+    fn create_instance() -> Instance {
+        let instance_desc = InstanceDescriptor {
+            backends: Backends::all(),
+            ..Default::default()
+        };
+        Instance::new(&instance_desc)
+    }
+}
+
+impl GpuManager<()> {
+    pub async fn simple() -> Result<Self> {
+        let instance = Self::create_instance();
+        let Some(adapter) = instance.request_adapter(&Default::default()).await else {
+            bail!("Couldn't create adapter");
+        };
+        let (device, queue) = adapter
+            .request_device(
+                &DeviceDescriptor {
+                    required_features: Features::empty(),
+                    ..Default::default()
+                },
+                None,
+            )
+            .await?;
+
+        Ok(Self {
+            surface_manager: (),
+            device,
+            queue,
+        })
+    }
+}
+
+impl<'window> GpuManager<WindowManager<'window>> {
+    pub async fn with_window(event_loop: &winit::event_loop::ActiveEventLoop) -> Result<Self> {
         let instance = Self::create_instance();
 
         let window = Arc::new(Self::create_window(event_loop)?);
-
         let surface = instance.create_surface(window.clone())?;
 
         let Some(adapter) = instance
@@ -47,20 +86,26 @@ impl RenderManager<'_> {
         surface.configure(&device, &config);
 
         Ok(Self {
-            window,
-            surface,
+            surface_manager: WindowManager {
+                window,
+                surface,
+                config,
+            },
             device,
             queue,
-            config,
         })
     }
 
-    fn create_instance() -> Instance {
-        let instance_desc = InstanceDescriptor {
-            backends: Backends::all(),
-            ..Default::default()
-        };
-        Instance::new(&instance_desc)
+    pub fn config(&self) -> &SurfaceConfiguration {
+        &self.surface_manager.config
+    }
+
+    pub fn surface(&self) -> &Surface<'window> {
+        &self.surface_manager.surface
+    }
+
+    pub fn window(&self) -> Arc<Window> {
+        self.surface_manager.window.clone()
     }
 
     fn create_window(
@@ -115,4 +160,10 @@ impl RenderManager<'_> {
             view_formats: vec![],
         })
     }
+}
+
+pub struct WindowManager<'window> {
+    window: Arc<Window>,
+    surface: Surface<'window>,
+    config: SurfaceConfiguration,
 }

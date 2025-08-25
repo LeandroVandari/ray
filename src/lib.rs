@@ -6,8 +6,8 @@ use wgpu::{
 };
 use winit::{application::ApplicationHandler, event::WindowEvent};
 
-mod render_manager;
-use render_manager::RenderManager;
+mod gpu_manager;
+use gpu_manager::{GpuManager, WindowManager};
 
 mod compute_context;
 use compute_context::ComputeContext;
@@ -16,7 +16,7 @@ mod render_context;
 pub mod objects;
 
 pub struct App<'window> {
-    render_manager: Option<RenderManager<'window>>,
+    gpu_manager: Option<GpuManager<WindowManager<'window>>>,
     compute_context: Option<ComputeContext>,
     render_context: Option<RenderContext>,
     spheres: Vec<objects::Sphere>,
@@ -25,7 +25,7 @@ pub struct App<'window> {
 impl App<'_> {
     pub fn new(spheres: Vec<objects::Sphere>) -> Self {
         Self {
-            render_manager: None,
+            gpu_manager: None,
             compute_context: None,
             render_context: None,
             spheres,
@@ -35,22 +35,22 @@ impl App<'_> {
 
 impl ApplicationHandler for App<'_> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        self.render_manager = Some(pollster::block_on(RenderManager::new(event_loop)).unwrap());
+        self.gpu_manager = Some(pollster::block_on(GpuManager::with_window(event_loop)).unwrap());
 
-        let render_manager = self.render_manager.as_ref().unwrap();
-        let window_size = render_manager.window.inner_size();
+        let gpu_manager = self.gpu_manager.as_ref().unwrap();
+        let window_size = gpu_manager.window().inner_size();
 
         self.compute_context = Some(ComputeContext::new(
-            &render_manager.device,
+            gpu_manager.device(),
             (window_size.width, window_size.height),
             TextureFormat::Rgba8Unorm,
             &self.spheres,
         ));
 
         self.render_context = Some(RenderContext::new(
-            &render_manager.device,
+            gpu_manager.device(),
             self.compute_context.as_ref().unwrap(),
-            render_manager,
+            gpu_manager,
         ))
     }
 
@@ -68,24 +68,24 @@ impl ApplicationHandler for App<'_> {
                 drop(compute_context);
                 let render_context = self.render_context.take().unwrap();
                 drop(render_context);
-                let render_manager = self.render_manager.take().unwrap();
-                drop(render_manager);
+                let gpu_manager = self.gpu_manager.take().unwrap();
+                drop(gpu_manager);
             }
 
             WindowEvent::RedrawRequested => {
-                let (Some(render_manager), Some(compute_context), Some(render_context)) = (
-                    self.render_manager.as_ref(),
+                let (Some(gpu_manager), Some(compute_context), Some(render_context)) = (
+                    self.gpu_manager.as_ref(),
                     self.compute_context.as_ref(),
                     self.render_context.as_ref(),
                 ) else {
                     return;
                 };
 
-                let output = render_manager.surface.get_current_texture().unwrap();
+                let output = gpu_manager.surface().get_current_texture().unwrap();
 
                 let mut encoder =
-                    render_manager
-                        .device
+                    gpu_manager
+                        .device()
                         .create_command_encoder(&CommandEncoderDescriptor {
                             label: Some("Command Enconder"),
                         });
@@ -132,13 +132,13 @@ impl ApplicationHandler for App<'_> {
                     render_pass.draw(0..3, 0..3);
                 }
 
-                render_manager
-                    .queue
+                gpu_manager
+                    .queue()
                     .submit(std::iter::once(encoder.finish()));
 
                 output.present();
 
-                render_manager.window.request_redraw();
+                gpu_manager.window().request_redraw();
             }
 
             _ => (),
