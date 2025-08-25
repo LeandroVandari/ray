@@ -27,3 +27,20 @@ fn create_camera(size: vec2<u32>) -> Camera {
 
     return Camera(pix0_coord, pixel_delta_u, pixel_delta_v);
 }
+
+fn get_ray(camera: Camera, i: u32, j: u32, rng_state: ptr<function, u32>) -> Ray {
+    let offset = sample_square(rng_state);
+
+    let pixel_sample = camera.pix0_coord + ((f32(i) + offset.x)*camera.pixel_delta_u) + ((f32(j) + offset.y)*camera.pixel_delta_v);
+
+    let ray_origin = CAMERA_CENTER;
+    let ray_direction = pixel_sample - ray_origin;
+
+    return Ray(ray_origin, ray_direction);
+
+
+}
+
+fn sample_square(rng_state: ptr<function, u32> ) -> vec2<f32> {
+    return vec2(rngNextFloat(rng_state) - 0.5, rngNextFloat(rng_state) -0.5);
+} 

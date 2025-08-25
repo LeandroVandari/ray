@@ -5,7 +5,7 @@ struct Sphere {
 };
 
 
-fn hit_sphere(sphere: Sphere, ray: Ray, ray_tmin: f32, ray_tmax: f32, hit_record: ptr<function, HitRecord>) -> bool {
+fn hit_sphere(sphere: Sphere, ray: Ray, interval: Interval, hit_record: ptr<function, HitRecord>) -> bool {
     let oc = sphere.center - ray.origin;
     let a = length_squared(ray.direction);
     let h = dot(ray.direction, oc);
@@ -20,9 +20,9 @@ fn hit_sphere(sphere: Sphere, ray: Ray, ray_tmin: f32, ray_tmax: f32, hit_record
     let disc_root = sqrt(discriminant);
 
     var root = (h - disc_root) / a;
-    if root <= ray_tmin || root >= ray_tmax {
+    if root <= interval.min || root >= interval.max {
         root = (h + disc_root) / a;
-        if root <= ray_tmin || root >= ray_tmax {
+        if root <= interval.min || root >= interval.max {
             return false;
         }
     }

@@ -120,6 +120,9 @@ impl ComputeContext {
             label: Some("shader"),
             source: wgpu::ShaderSource::Wgsl(
                 concat!(
+                    include_str!("shaders/compute/math.wgsl"),
+                    include_str!("shaders/compute/random.wgsl"),
+                    include_str!("shaders/compute/interval.wgsl"),
                     include_str!("shaders/compute/sphere.wgsl"),
                     include_str!("shaders/compute/ray.wgsl"),
                     include_str!("shaders/compute/hit_record.wgsl"),
