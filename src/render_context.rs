@@ -2,15 +2,13 @@ use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, ColorTargetState, Device, FragmentState, MultisampleState,
     PipelineCompilationOptions, PipelineLayoutDescriptor, PrimitiveState, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages, TextureView,
+    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages, TextureFormat, TextureView,
     TextureViewDescriptor, VertexState,
 };
 
-use crate::{
-    compute_context::ComputeContext,
-    gpu_manager::{GpuManager, WindowManager},
-};
+use crate::compute_context::ComputeContext;
 
+#[derive(Debug)]
 pub struct RenderContext {
     pub(crate) bind_group: BindGroup,
     pub(crate) pipeline: RenderPipeline,
@@ -20,7 +18,7 @@ impl RenderContext {
     pub fn new(
         device: &Device,
         compute_context: &ComputeContext,
-        gpu_manager: &GpuManager<WindowManager<'_>>,
+        output_format: TextureFormat,
     ) -> Self {
         let bind_group_layout = Self::create_bind_group_layout(device);
         let bind_group = Self::create_bind_group(
@@ -31,7 +29,7 @@ impl RenderContext {
             &bind_group_layout,
         );
 
-        let pipeline = Self::create_render_pipeline(device, &bind_group_layout, gpu_manager);
+        let pipeline = Self::create_render_pipeline(device, &bind_group_layout, output_format);
 
         Self {
             pipeline,
@@ -73,7 +71,7 @@ impl RenderContext {
     fn create_render_pipeline(
         device: &Device,
         bind_group_layout: &BindGroupLayout,
-        gpu_manager: &GpuManager<WindowManager<'_>>,
+        output_format: TextureFormat,
     ) -> RenderPipeline {
         let fragment_shader = device.create_shader_module(ShaderModuleDescriptor {
             label: Some("Fragment Shader"),
@@ -98,7 +96,7 @@ impl RenderContext {
                 entry_point: Some("main_fragment"),
                 compilation_options: PipelineCompilationOptions::default(),
                 targets: &[Some(ColorTargetState {
-                    format: gpu_manager.config().format,
+                    format: output_format,
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],

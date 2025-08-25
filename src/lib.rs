@@ -1,19 +1,21 @@
 use log::info;
 use render_context::RenderContext;
 use wgpu::{
-    CommandEncoderDescriptor, ComputePassDescriptor, RenderPassDescriptor, TextureFormat,
-    TextureViewDescriptor,
+    CommandEncoderDescriptor, ComputePassDescriptor, RenderPassDescriptor, TextureViewDescriptor,
 };
 use winit::{application::ApplicationHandler, event::WindowEvent};
 
 mod gpu_manager;
-use gpu_manager::{GpuManager, WindowManager};
+pub use gpu_manager::{GpuManager, WindowManager};
 
 mod compute_context;
 use compute_context::ComputeContext;
 mod render_context;
 
 pub mod objects;
+
+#[cfg(test)]
+mod tests;
 
 pub struct App<'window> {
     gpu_manager: Option<GpuManager<WindowManager<'window>>>,
@@ -43,14 +45,13 @@ impl ApplicationHandler for App<'_> {
         self.compute_context = Some(ComputeContext::new(
             gpu_manager.device(),
             (window_size.width, window_size.height),
-            TextureFormat::Rgba8Unorm,
             &self.spheres,
         ));
 
         self.render_context = Some(RenderContext::new(
             gpu_manager.device(),
             self.compute_context.as_ref().unwrap(),
-            gpu_manager,
+            gpu_manager.config().format,
         ))
     }
 

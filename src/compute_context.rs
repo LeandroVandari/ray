@@ -9,6 +9,7 @@ use wgpu::{
 
 use crate::objects;
 
+#[derive(Debug)]
 pub struct ComputeContext {
     pub(crate) compute_pipeline: ComputePipeline,
     pub(crate) output_texture: Texture,
@@ -16,12 +17,8 @@ pub struct ComputeContext {
 }
 
 impl ComputeContext {
-    pub fn new(
-        device: &Device,
-        output_size: (u32, u32),
-        output_format: TextureFormat,
-        spheres: &[objects::Sphere],
-    ) -> Self {
+    pub fn new(device: &Device, output_size: (u32, u32), spheres: &[objects::Sphere]) -> Self {
+        let output_format = TextureFormat::Rgba8Unorm;
         let output_texture = Self::create_texture(
             device,
             Extent3d {
