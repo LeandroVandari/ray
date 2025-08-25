@@ -1,3 +1,16 @@
+fn rngNextVec3InUnitSphere(state: ptr<function, u32>) -> vec3<f32> {
+    let r = pow(rngNextFloat(state), 0.33333f);
+    let cosTheta = 1f - 2f * rngNextFloat(state);
+    let sinTheta = sqrt(1f - cosTheta * cosTheta);
+    let phi = 2f * PI * rngNextFloat(state);
+
+    let x = r * sinTheta * cos(phi);
+    let y = r * sinTheta * sin(phi);
+    let z = cosTheta;
+
+    return vec3(x, y, z);
+}
+
 fn rngNextFloat(state: ptr<function, u32>) -> f32 {
     let x = rngNextInt(state);
     return f32(x) / f32(0xffffffffu);
@@ -26,4 +39,14 @@ fn jenkinsHash(input: u32) -> u32 {
     x ^= x >> 11u;
     x += x << 15u;
     return x;
+}
+
+fn rngNextVec3OnHemisphere(state: ptr<function, u32>, normal: vec3<f32>) -> vec3<f32> {
+    let on_unit_sphere = rngNextVec3InUnitSphere(state);
+
+    if dot(on_unit_sphere, normal) > 0.0 {
+        return on_unit_sphere;
+    } else {
+        return -on_unit_sphere;
+    }
 }

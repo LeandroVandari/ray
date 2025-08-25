@@ -14,6 +14,7 @@ pub struct ComputeContext {
     pub(crate) compute_pipeline: ComputePipeline,
     pub(crate) output_texture: Texture,
     pub(crate) bind_group: BindGroup,
+    pub(crate) frame_uniform: Buffer,
 }
 
 impl ComputeContext {
@@ -33,8 +34,18 @@ impl ComputeContext {
         let sphere_buffer = Self::create_sphere_buffer(device, spheres);
 
         let bind_group_layout = Self::create_bind_group_layout(device, output_format);
-        let bind_group =
-            Self::create_bind_group(device, &bind_group_layout, &texture_view, &sphere_buffer);
+        let frame_uniform = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("Frame Uniform"),
+            contents: &0u32.to_be_bytes(),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+        let bind_group = Self::create_bind_group(
+            device,
+            &bind_group_layout,
+            &texture_view,
+            &sphere_buffer,
+            &frame_uniform,
+        );
 
         let compute_pipeline = Self::create_compute_pipeline(device, &bind_group_layout);
 
@@ -42,6 +53,7 @@ impl ComputeContext {
             compute_pipeline,
             output_texture,
             bind_group,
+            frame_uniform,
         }
     }
 
@@ -82,6 +94,16 @@ impl ComputeContext {
                     },
                     count: None,
                 },
+                BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
             ],
         })
     }
@@ -91,6 +113,7 @@ impl ComputeContext {
         layout: &BindGroupLayout,
         texture_view: &TextureView,
         sphere_buffer: &Buffer,
+        frame_uniform: &Buffer,
     ) -> BindGroup {
         device.create_bind_group(&BindGroupDescriptor {
             label: Some("Compute BindGroup"),
@@ -102,11 +125,11 @@ impl ComputeContext {
                 },
                 BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::Buffer(BufferBinding {
-                        buffer: sphere_buffer,
-                        offset: 0,
-                        size: None,
-                    }),
+                    resource: sphere_buffer.as_entire_binding(),
+                },
+                BindGroupEntry {
+                    binding: 2,
+                    resource: frame_uniform.as_entire_binding(),
                 },
             ],
         })

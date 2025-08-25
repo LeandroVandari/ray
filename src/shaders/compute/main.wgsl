@@ -1,14 +1,17 @@
 @group(0) @binding(0) var texture: texture_storage_2d<rgba8unorm, write>;
 @group(0) @binding(1) var<storage, read> spheres: array<Sphere>;
+@group(0) @binding(2) var<uniform> frame: u32;
 
 fn length_squared(vector: vec3<f32>) -> f32 {
     return pow(vector.x, 2.) + pow(vector.y, 2.) + pow(vector.z, 2.);
 }
 
+const MAGENTA = vec3(0.74, 0.02, 0.84);
+
 // TODO: make into a uniform
 const SAMPLES_PER_PIXEL = 10u;
 const PIXEL_SAMPLES_SCALE = 1.0/f32(SAMPLES_PER_PIXEL);
-const FRAME = 0u;
+const MAX_RAY_BOUNCES = 10u;
 
 @compute @workgroup_size(8,8,1)
 fn main_compute(
@@ -17,7 +20,7 @@ fn main_compute(
 ) {
     let size = textureDimensions(texture).xy;
 
-    var rng_state = initRng(invocation_id.xy, size, FRAME);
+    var rng_state = initRng(invocation_id.xy, size, frame);
 
     let camera = create_camera(size);
 
@@ -27,7 +30,7 @@ fn main_compute(
     var color = vec3(0.);
     for (var i = 0u; i < SAMPLES_PER_PIXEL; i++) {
         let ray = get_ray(camera, invocation_id.x, invocation_id.y, &rng_state);
-        color += ray_color(ray);
+        color += ray_color(ray, &rng_state);
     }
 
     let location = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
@@ -36,17 +39,32 @@ fn main_compute(
 
 
 
-fn ray_color(ray: Ray) -> vec3<f32> {
+fn ray_color(ray: Ray, state: ptr<function, u32>) -> vec3<f32> {
+
     var hit_record = HitRecord();
-    if closest_hit(ray, Interval(0, F32_MAX), &hit_record) {
-        return 0.5 * (hit_record.normal + vec3(1.0, 1.0, 1.0));
+    
+    var new_ray = ray;
+
+    var bounces = 0u;
+    var color = vec3(0.);
+    for (var bounce = 0u; bounce < MAX_RAY_BOUNCES; bounce++) {
+        if closest_hit(new_ray, Interval(0, F32_MAX), &hit_record) {
+            let direction = rngNextVec3OnHemisphere(state, hit_record.normal);
+            new_ray.origin = hit_record.point;
+            new_ray.direction = direction;
+            bounces++;
+        }
+        else {
+            let unit_direction = normalize(new_ray.direction);
+            let a = 0.5 * (unit_direction.y + 1.0);
+            color = (1.0 - a) * vec3<f32>(1.0) + a * vec3<f32>(0.5, 0.7, 1.0);
+            break;
+        }
+
+
     }
-
-
-    let unit_direction = normalize(ray.direction);
-
-    let a = 0.5 * (unit_direction.y + 1.0);
-    return (1.0 - a) * vec3<f32>(1.0) + a * vec3<f32>(0.5, 0.7, 1.0);
+    return color * pow(0.5, f32(bounces));
+    
 }
 
 fn closest_hit(ray: Ray, interval: Interval, hit_record: ptr<function, HitRecord>) -> bool {

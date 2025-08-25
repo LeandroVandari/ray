@@ -22,6 +22,7 @@ pub struct App<'window> {
     compute_context: Option<ComputeContext>,
     render_context: Option<RenderContext>,
     spheres: Vec<objects::Sphere>,
+    frame: u32,
 }
 
 impl App<'_> {
@@ -31,6 +32,7 @@ impl App<'_> {
             compute_context: None,
             render_context: None,
             spheres,
+            frame: 0,
         }
     }
 }
@@ -74,6 +76,7 @@ impl ApplicationHandler for App<'_> {
             }
 
             WindowEvent::RedrawRequested => {
+                self.frame += 1;
                 let (Some(gpu_manager), Some(compute_context), Some(render_context)) = (
                     self.gpu_manager.as_ref(),
                     self.compute_context.as_ref(),
@@ -81,6 +84,11 @@ impl ApplicationHandler for App<'_> {
                 ) else {
                     return;
                 };
+                gpu_manager.queue().write_buffer(
+                    &compute_context.frame_uniform,
+                    0,
+                    &self.frame.to_be_bytes(),
+                );
 
                 let output = gpu_manager.surface().get_current_texture().unwrap();
 
