@@ -5,7 +5,10 @@ fn length_squared(vector: vec3<f32>) -> f32 {
     return pow(vector.x, 2.) + pow(vector.y, 2.) + pow(vector.z, 2.);
 }
 
+// TODO: make into a uniform
 const SAMPLES_PER_PIXEL = 10u;
+const PIXEL_SAMPLES_SCALE = 1.0/f32(SAMPLES_PER_PIXEL);
+const FRAME = 0u;
 
 @compute @workgroup_size(8,8,1)
 fn main_compute(
@@ -13,8 +16,8 @@ fn main_compute(
     @builtin(num_workgroups) num_workgroups: vec3<u32>
 ) {
     let size = textureDimensions(texture).xy;
-    // TODO: REPLACE FRAME 0 WITH A UNIFORM;
-    var rng_state = initRng(invocation_id.xy, size, 0);
+
+    var rng_state = initRng(invocation_id.xy, size, FRAME);
 
     let camera = create_camera(size);
 
@@ -27,13 +30,8 @@ fn main_compute(
         color += ray_color(ray);
     }
 
-
-
-    
-
-
     let location = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
-    textureStore(texture, location, vec4<f32>(color*(1.0/f32(SAMPLES_PER_PIXEL)), 1.0));
+    textureStore(texture, location, vec4<f32>(color*PIXEL_SAMPLES_SCALE, 1.0));
 }
 
 
