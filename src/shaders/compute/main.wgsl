@@ -48,11 +48,12 @@ fn ray_color(ray: Ray, state: ptr<function, u32>) -> vec3<f32> {
     var bounces = 0u;
     var color = vec3(0.);
     for (var bounce = 0u; bounce < MAX_RAY_BOUNCES; bounce++) {
-        if closest_hit(new_ray, Interval(0, F32_MAX), &hit_record) {
+        if closest_hit(new_ray, Interval(0.01, F32_MAX), &hit_record) {
             let direction = rngNextVec3OnHemisphere(state, hit_record.normal);
             new_ray.origin = hit_record.point;
             new_ray.direction = direction;
             bounces++;
+            continue;
         }
         else {
             let unit_direction = normalize(new_ray.direction);
