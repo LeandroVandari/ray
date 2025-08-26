@@ -16,6 +16,12 @@ fn rngNextFloat(state: ptr<function, u32>) -> f32 {
     return f32(x) / f32(0xffffffffu);
 }
 
+fn rngUnitVector(state: ptr<function, u32>) -> vec3<f32> {
+    let v = vec3(rngNextFloat(state), rngNextFloat(state), rngNextFloat(state));
+
+    return normalize(v);
+}
+
 fn initRng(pixel: vec2<u32>, resolution: vec2<u32>, frame: u32) -> u32 {
     // Adapted from https://github.com/boksajak/referencePT
     let seed = dot(pixel, vec2<u32>(1u, resolution.x)) ^ jenkinsHash(frame);

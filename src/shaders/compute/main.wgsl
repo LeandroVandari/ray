@@ -11,7 +11,7 @@ const MAGENTA = vec3(0.74, 0.02, 0.84);
 // TODO: make into a uniform
 const SAMPLES_PER_PIXEL = 10u;
 const PIXEL_SAMPLES_SCALE = 1.0/f32(SAMPLES_PER_PIXEL);
-const MAX_RAY_BOUNCES = 10u;
+const MAX_RAY_BOUNCES = 50u;
 
 @compute @workgroup_size(8,8,1)
 fn main_compute(
@@ -34,7 +34,8 @@ fn main_compute(
     }
 
     let location = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
-    textureStore(texture, location, vec4<f32>(color*PIXEL_SAMPLES_SCALE, 1.0));
+    // sqrt: convert to gamma space
+    textureStore(texture, location, vec4<f32>(sqrt(color*PIXEL_SAMPLES_SCALE), 1.0));
 }
 
 
@@ -48,8 +49,8 @@ fn ray_color(ray: Ray, state: ptr<function, u32>) -> vec3<f32> {
     var bounces = 0u;
     var color = vec3(0.);
     for (var bounce = 0u; bounce < MAX_RAY_BOUNCES; bounce++) {
-        if closest_hit(new_ray, Interval(0.01, F32_MAX), &hit_record) {
-            let direction = rngNextVec3OnHemisphere(state, hit_record.normal);
+        if closest_hit(new_ray, Interval(0.001, F32_MAX), &hit_record) {
+            let direction = hit_record.normal + rngUnitVector(state);
             new_ray.origin = hit_record.point;
             new_ray.direction = direction;
             bounces++;
