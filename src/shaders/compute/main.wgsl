@@ -1,6 +1,6 @@
 @group(0) @binding(0) var texture: texture_storage_2d<rgba8unorm, write>;
-@group(0) @binding(1) var<storage, read> spheres: array<Sphere>;
-@group(0) @binding(2) var<uniform> frame: u32;
+@group(1) @binding(0) var<storage, read> spheres: array<Sphere>;
+@group(1) @binding(1) var<uniform> frame: u32;
 
 fn length_squared(vector: vec3<f32>) -> f32 {
     return pow(vector.x, 2.) + pow(vector.y, 2.) + pow(vector.z, 2.);

@@ -105,7 +105,8 @@ impl ApplicationHandler for App<'_> {
                     });
 
                     compute_pass.set_pipeline(&compute_context.compute_pipeline);
-                    compute_pass.set_bind_group(0, &compute_context.bind_group, &[]);
+                    compute_pass.set_bind_group(0, &compute_context.textures_bind_group, &[]);
+                    compute_pass.set_bind_group(1, &compute_context.settings_bind_group, &[]);
                     compute_pass.dispatch_workgroups(
                         compute_context.output_texture.width() / 8 + 1,
                         compute_context.output_texture.height() / 8 + 1,

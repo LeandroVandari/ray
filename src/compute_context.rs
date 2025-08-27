@@ -13,8 +13,10 @@ use crate::objects;
 pub struct ComputeContext {
     pub(crate) compute_pipeline: ComputePipeline,
     pub(crate) output_texture: Texture,
-    pub(crate) bind_group: BindGroup,
+    pub(crate) textures_bind_group: BindGroup,
     pub(crate) frame_uniform: Buffer,
+
+    pub(crate) settings_bind_group: BindGroup,
 }
 
 impl ComputeContext {
@@ -31,29 +33,38 @@ impl ComputeContext {
         );
         let texture_view = output_texture.create_view(&TextureViewDescriptor::default());
 
-        let sphere_buffer = Self::create_sphere_buffer(device, spheres);
+        let textures_bind_group_layout =
+            Self::create_textures_bind_group_layout(device, output_format);
+        let textures_bind_group =
+            Self::create_textures_bind_group(device, &textures_bind_group_layout, &texture_view);
 
-        let bind_group_layout = Self::create_bind_group_layout(device, output_format);
+        let sphere_buffer = Self::create_sphere_buffer(device, spheres);
         let frame_uniform = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("Frame Uniform"),
             contents: &0u32.to_be_bytes(),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
-        let bind_group = Self::create_bind_group(
+
+        let settings_bind_group_layout = Self::create_settings_layout(device);
+        let settings_bind_group = Self::create_settings_bind_group(
             device,
-            &bind_group_layout,
-            &texture_view,
+            &settings_bind_group_layout,
             &sphere_buffer,
             &frame_uniform,
         );
 
-        let compute_pipeline = Self::create_compute_pipeline(device, &bind_group_layout);
+        let compute_pipeline = Self::create_compute_pipeline(
+            device,
+            &textures_bind_group_layout,
+            &settings_bind_group_layout,
+        );
 
         Self {
             compute_pipeline,
             output_texture,
-            bind_group,
+            textures_bind_group,
             frame_uniform,
+            settings_bind_group,
         }
     }
 
@@ -70,22 +81,47 @@ impl ComputeContext {
         })
     }
 
-    fn create_bind_group_layout(device: &Device, format: TextureFormat) -> BindGroupLayout {
+    fn create_textures_bind_group_layout(
+        device: &Device,
+        format: TextureFormat,
+    ) -> BindGroupLayout {
+        device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+            label: Some("Compute BindGroupLayout"),
+            entries: &[BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::StorageTexture {
+                    access: wgpu::StorageTextureAccess::WriteOnly,
+                    format,
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                },
+                count: None,
+            }],
+        })
+    }
+
+    fn create_textures_bind_group(
+        device: &Device,
+        layout: &BindGroupLayout,
+        texture_view: &TextureView,
+    ) -> BindGroup {
+        device.create_bind_group(&BindGroupDescriptor {
+            label: Some("Compute BindGroup"),
+            layout,
+            entries: &[BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(texture_view),
+            }],
+        })
+    }
+
+    fn create_settings_layout(device: &Device) -> BindGroupLayout {
         device.create_bind_group_layout(&BindGroupLayoutDescriptor {
             label: Some("Compute BindGroupLayout"),
             entries: &[
+                // Spheres
                 BindGroupLayoutEntry {
                     binding: 0,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::StorageTexture {
-                        access: wgpu::StorageTextureAccess::WriteOnly,
-                        format,
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                    },
-                    count: None,
-                },
-                BindGroupLayoutEntry {
-                    binding: 1,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Storage { read_only: true },
@@ -94,8 +130,9 @@ impl ComputeContext {
                     },
                     count: None,
                 },
+                // Frame
                 BindGroupLayoutEntry {
-                    binding: 2,
+                    binding: 1,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
@@ -108,27 +145,22 @@ impl ComputeContext {
         })
     }
 
-    fn create_bind_group(
+    fn create_settings_bind_group(
         device: &Device,
         layout: &BindGroupLayout,
-        texture_view: &TextureView,
         sphere_buffer: &Buffer,
         frame_uniform: &Buffer,
     ) -> BindGroup {
         device.create_bind_group(&BindGroupDescriptor {
-            label: Some("Compute BindGroup"),
+            label: Some("Settings"),
             layout,
             entries: &[
                 BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureView(texture_view),
-                },
-                BindGroupEntry {
-                    binding: 1,
                     resource: sphere_buffer.as_entire_binding(),
                 },
                 BindGroupEntry {
-                    binding: 2,
+                    binding: 1,
                     resource: frame_uniform.as_entire_binding(),
                 },
             ],
@@ -137,7 +169,8 @@ impl ComputeContext {
 
     fn create_compute_pipeline(
         device: &Device,
-        bind_group_layout: &BindGroupLayout,
+        textures_bind_group_layout: &BindGroupLayout,
+        settings_bind_group_layout: &BindGroupLayout,
     ) -> ComputePipeline {
         let shader = device.create_shader_module(ShaderModuleDescriptor {
             label: Some("shader"),
@@ -158,7 +191,7 @@ impl ComputeContext {
 
         let compute_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: Some("Compute Pipeline Layout"),
-            bind_group_layouts: &[bind_group_layout],
+            bind_group_layouts: &[textures_bind_group_layout, settings_bind_group_layout],
             push_constant_ranges: &[],
         });
 
