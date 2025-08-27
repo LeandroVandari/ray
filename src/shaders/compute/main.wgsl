@@ -1,4 +1,7 @@
 @group(0) @binding(0) var texture: texture_storage_2d<rgba8unorm, write>;
+@group(0) @binding(1) var previous: texture_2d<f32>;
+@group(0) @binding(2) var<uniform> accumulated_frames: u32;
+
 @group(1) @binding(0) var<storage, read> spheres: array<Sphere>;
 @group(1) @binding(1) var<uniform> frame: u32;
 
@@ -34,8 +37,15 @@ fn main_compute(
     }
 
     let location = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
+
     // sqrt: convert to gamma space
-    textureStore(texture, location, vec4<f32>(sqrt(color*PIXEL_SAMPLES_SCALE), 1.0));
+    let ray_color = vec4<f32>(sqrt(color*PIXEL_SAMPLES_SCALE), 1.0);
+
+    let previous_color = textureLoad(previous, location, 0);
+    let weight = min(30u, accumulated_frames);
+    var output_color = (previous_color*f32(weight) + ray_color) / f32(weight + 1u);
+
+    textureStore(texture, location, output_color);
 }
 
 

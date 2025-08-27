@@ -1,7 +1,8 @@
 use log::info;
 use render_context::RenderContext;
 use wgpu::{
-    CommandEncoderDescriptor, ComputePassDescriptor, RenderPassDescriptor, TextureViewDescriptor,
+    CommandEncoderDescriptor, ComputePassDescriptor, Extent3d, Origin3d, RenderPassDescriptor,
+    TexelCopyTextureInfo, TextureViewDescriptor,
 };
 use winit::{application::ApplicationHandler, event::WindowEvent};
 
@@ -76,7 +77,6 @@ impl ApplicationHandler for App<'_> {
             }
 
             WindowEvent::RedrawRequested => {
-                self.frame += 1;
                 let (Some(gpu_manager), Some(compute_context), Some(render_context)) = (
                     self.gpu_manager.as_ref(),
                     self.compute_context.as_ref(),
@@ -86,6 +86,11 @@ impl ApplicationHandler for App<'_> {
                 };
                 gpu_manager.queue().write_buffer(
                     &compute_context.frame_uniform,
+                    0,
+                    &self.frame.to_be_bytes(),
+                );
+                gpu_manager.queue().write_buffer(
+                    &compute_context.accumulated_frames,
                     0,
                     &self.frame.to_be_bytes(),
                 );
@@ -113,6 +118,26 @@ impl ApplicationHandler for App<'_> {
                         1,
                     );
                 }
+
+                encoder.copy_texture_to_texture(
+                    TexelCopyTextureInfo {
+                        texture: &compute_context.output_texture,
+                        mip_level: 0,
+                        origin: Origin3d::ZERO,
+                        aspect: wgpu::TextureAspect::All,
+                    },
+                    TexelCopyTextureInfo {
+                        texture: &compute_context.previous_texture,
+                        mip_level: 0,
+                        origin: Origin3d::ZERO,
+                        aspect: wgpu::TextureAspect::All,
+                    },
+                    Extent3d {
+                        width: compute_context.output_texture.width(),
+                        height: compute_context.output_texture.height(),
+                        depth_or_array_layers: 1,
+                    },
+                );
 
                 {
                     let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
@@ -147,7 +172,7 @@ impl ApplicationHandler for App<'_> {
                     .submit(std::iter::once(encoder.finish()));
 
                 output.present();
-
+                self.frame += 1;
                 gpu_manager.window().request_redraw();
             }
 

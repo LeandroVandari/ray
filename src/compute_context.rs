@@ -12,31 +12,45 @@ use crate::objects;
 #[derive(Debug)]
 pub struct ComputeContext {
     pub(crate) compute_pipeline: ComputePipeline,
-    pub(crate) output_texture: Texture,
-    pub(crate) textures_bind_group: BindGroup,
-    pub(crate) frame_uniform: Buffer,
 
+    pub(crate) previous_texture: Texture,
+    pub(crate) output_texture: Texture,
+    pub(crate) accumulated_frames: Buffer,
+    pub(crate) textures_bind_group: BindGroup,
+
+    pub(crate) frame_uniform: Buffer,
     pub(crate) settings_bind_group: BindGroup,
 }
 
 impl ComputeContext {
     pub fn new(device: &Device, output_size: (u32, u32), spheres: &[objects::Sphere]) -> Self {
         let output_format = TextureFormat::Rgba8Unorm;
-        let output_texture = Self::create_texture(
-            device,
-            Extent3d {
-                width: output_size.0,
-                height: output_size.1,
-                depth_or_array_layers: 1,
-            },
-            output_format,
-        );
-        let texture_view = output_texture.create_view(&TextureViewDescriptor::default());
+        let texture_size = Extent3d {
+            width: output_size.0,
+            height: output_size.1,
+            depth_or_array_layers: 1,
+        };
+        let output_texture = Self::create_texture(device, texture_size, output_format);
+        let output_texture_view = output_texture.create_view(&TextureViewDescriptor::default());
+
+        let previous_texture = Self::create_texture(device, texture_size, output_format);
+        let previous_texture_view = previous_texture.create_view(&TextureViewDescriptor::default());
 
         let textures_bind_group_layout =
             Self::create_textures_bind_group_layout(device, output_format);
-        let textures_bind_group =
-            Self::create_textures_bind_group(device, &textures_bind_group_layout, &texture_view);
+
+        let accumulated_frames = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("Accumulated Frames"),
+            contents: &0u32.to_be_bytes(),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+        let textures_bind_group = Self::create_textures_bind_group(
+            device,
+            &textures_bind_group_layout,
+            &output_texture_view,
+            &previous_texture_view,
+            &accumulated_frames,
+        );
 
         let sphere_buffer = Self::create_sphere_buffer(device, spheres);
         let frame_uniform = device.create_buffer_init(&BufferInitDescriptor {
@@ -63,6 +77,8 @@ impl ComputeContext {
             compute_pipeline,
             output_texture,
             textures_bind_group,
+            previous_texture,
+            accumulated_frames,
             frame_uniform,
             settings_bind_group,
         }
@@ -76,7 +92,10 @@ impl ComputeContext {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format,
-            usage: TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING,
+            usage: TextureUsages::STORAGE_BINDING
+                | TextureUsages::TEXTURE_BINDING
+                | TextureUsages::COPY_SRC
+                | TextureUsages::COPY_DST,
             view_formats: &[],
         })
     }
@@ -87,31 +106,65 @@ impl ComputeContext {
     ) -> BindGroupLayout {
         device.create_bind_group_layout(&BindGroupLayoutDescriptor {
             label: Some("Compute BindGroupLayout"),
-            entries: &[BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::COMPUTE,
-                ty: wgpu::BindingType::StorageTexture {
-                    access: wgpu::StorageTextureAccess::WriteOnly,
-                    format,
-                    view_dimension: wgpu::TextureViewDimension::D2,
+            entries: &[
+                BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::StorageTexture {
+                        access: wgpu::StorageTextureAccess::WriteOnly,
+                        format,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                    },
+                    count: None,
                 },
-                count: None,
-            }],
+                BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                    },
+                    count: None,
+                },
+                BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+            ],
         })
     }
 
     fn create_textures_bind_group(
         device: &Device,
         layout: &BindGroupLayout,
-        texture_view: &TextureView,
+        output_texture_view: &TextureView,
+        previous_texture_view: &TextureView,
+        accumulated_frames: &Buffer,
     ) -> BindGroup {
         device.create_bind_group(&BindGroupDescriptor {
             label: Some("Compute BindGroup"),
             layout,
-            entries: &[BindGroupEntry {
-                binding: 0,
-                resource: wgpu::BindingResource::TextureView(texture_view),
-            }],
+            entries: &[
+                BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(output_texture_view),
+                },
+                BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(previous_texture_view),
+                },
+                BindGroupEntry {
+                    binding: 2,
+                    resource: accumulated_frames.as_entire_binding(),
+                },
+            ],
         })
     }
 
