@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use anyhow::{Result, bail};
 use log::info;
 use pollster::FutureExt;
@@ -123,6 +125,7 @@ impl ApplicationHandler for App<'_> {
 pub fn write_to_file<SurfaceManager>(
     gpu_manager: &GpuManager<SurfaceManager>,
     texture: &Texture,
+    path: Option<&Path>,
 ) -> Result<()> {
     const U32_SIZE: u32 = std::mem::size_of::<u32>() as u32;
 
@@ -181,7 +184,7 @@ pub fn write_to_file<SurfaceManager>(
             bail!("Couldn't save image to file.")
         };
 
-        buffer.save("output.png")?;
+        buffer.save(path.unwrap_or(Path::new("output.png")))?;
     }
 
     output_buffer.unmap();
