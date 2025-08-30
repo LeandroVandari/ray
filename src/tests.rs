@@ -1,5 +1,5 @@
 use pollster::FutureExt;
-use wgpu::TextureFormat;
+use wgpu::{CommandEncoderDescriptor, TextureFormat};
 
 use crate::{
     compute_context::ComputeContext, gpu_manager::GpuManager, objects::Sphere,
@@ -40,4 +40,26 @@ fn create_render_context() {
     );
 
     dbg!(render_ctx);
+}
+
+#[test]
+fn draw_scene() {
+    let gpu_manager = GpuManager::simple().block_on().unwrap();
+
+    let compute_ctx = ComputeContext::new(
+        gpu_manager.device(),
+        (100, 100),
+        &[
+            Sphere::new([0., 0., -1.0], 0.5),
+            Sphere::new([0.0, -100.5, -1.0], 100.),
+        ],
+    );
+
+    let mut encoder = gpu_manager
+        .device()
+        .create_command_encoder(&CommandEncoderDescriptor {
+            label: Some("Test Encoder"),
+        });
+
+    compute_ctx.draw(&mut encoder);
 }
