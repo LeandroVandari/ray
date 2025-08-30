@@ -135,8 +135,6 @@ impl<'window> GpuManager<WindowManager<'window>> {
 
         fn get_surface_format(available_formats: &[TextureFormat]) -> Result<TextureFormat> {
             let priority_formats = [
-                wgpu::TextureFormat::Rgba8UnormSrgb,
-                wgpu::TextureFormat::Bgra8UnormSrgb,
                 wgpu::TextureFormat::Rgba8Unorm,
                 wgpu::TextureFormat::Bgra8Unorm,
             ];
