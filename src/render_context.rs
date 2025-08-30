@@ -1,9 +1,9 @@
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, ColorTargetState, Device, FragmentState, MultisampleState,
-    PipelineCompilationOptions, PipelineLayoutDescriptor, PrimitiveState, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages, TextureFormat, TextureView,
-    TextureViewDescriptor, VertexState,
+    BindGroupLayoutEntry, ColorTargetState, CommandEncoder, Device, FragmentState,
+    MultisampleState, PipelineCompilationOptions, PipelineLayoutDescriptor, PrimitiveState,
+    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor,
+    ShaderStages, TextureFormat, TextureView, TextureViewDescriptor, VertexState,
 };
 
 use crate::compute_context::ComputeContext;
@@ -35,6 +35,32 @@ impl RenderContext {
             pipeline,
             bind_group,
         }
+    }
+
+    pub fn draw_to_texture(&self, encoder: &mut CommandEncoder, view: &TextureView) {
+        let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
+            label: Some("RenderPass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                        r: 0.1,
+                        g: 0.2,
+                        b: 0.3,
+                        a: 1.0,
+                    }),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+
+        render_pass.set_bind_group(0, &self.bind_group, &[]);
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.draw(0..3, 0..3);
     }
 
     fn create_bind_group_layout(device: &Device) -> BindGroupLayout {

@@ -1,9 +1,10 @@
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, Buffer, BufferBinding, BufferUsages, ComputePipeline,
-    ComputePipelineDescriptor, Device, Extent3d, PipelineCompilationOptions,
-    PipelineLayoutDescriptor, ShaderModuleDescriptor, Texture, TextureDescriptor, TextureFormat,
-    TextureUsages, TextureView, TextureViewDescriptor,
+    BindGroupLayoutEntry, Buffer, BufferUsages, CommandEncoder, ComputePassDescriptor,
+    ComputePipeline, ComputePipelineDescriptor, Device, Extent3d, Origin3d,
+    PipelineCompilationOptions, PipelineLayoutDescriptor, ShaderModuleDescriptor,
+    TexelCopyTextureInfo, Texture, TextureDescriptor, TextureFormat, TextureUsages, TextureView,
+    TextureViewDescriptor,
     util::{BufferInitDescriptor, DeviceExt},
 };
 
@@ -15,7 +16,6 @@ pub struct ComputeContext {
 
     pub(crate) previous_texture: Texture,
     pub(crate) output_texture: Texture,
-    pub(crate) accumulated_frames: Buffer,
     pub(crate) textures_bind_group: BindGroup,
 
     pub(crate) frame_uniform: Buffer,
@@ -39,17 +39,11 @@ impl ComputeContext {
         let textures_bind_group_layout =
             Self::create_textures_bind_group_layout(device, output_format);
 
-        let accumulated_frames = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("Accumulated Frames"),
-            contents: &0u32.to_be_bytes(),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
         let textures_bind_group = Self::create_textures_bind_group(
             device,
             &textures_bind_group_layout,
             &output_texture_view,
             &previous_texture_view,
-            &accumulated_frames,
         );
 
         let sphere_buffer = Self::create_sphere_buffer(device, spheres);
@@ -78,10 +72,47 @@ impl ComputeContext {
             output_texture,
             textures_bind_group,
             previous_texture,
-            accumulated_frames,
             frame_uniform,
             settings_bind_group,
         }
+    }
+
+    pub fn draw(&self, encoder: &mut CommandEncoder) {
+        {
+            let mut compute_pass = encoder.begin_compute_pass(&ComputePassDescriptor {
+                label: Some("Compute Pass"),
+                timestamp_writes: None,
+            });
+
+            compute_pass.set_pipeline(&self.compute_pipeline);
+            compute_pass.set_bind_group(0, &self.textures_bind_group, &[]);
+            compute_pass.set_bind_group(1, &self.settings_bind_group, &[]);
+            compute_pass.dispatch_workgroups(
+                self.output_texture.width() / 8 + 1,
+                self.output_texture.height() / 8 + 1,
+                1,
+            );
+        }
+
+        encoder.copy_texture_to_texture(
+            TexelCopyTextureInfo {
+                texture: &self.output_texture,
+                mip_level: 0,
+                origin: Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            TexelCopyTextureInfo {
+                texture: &self.previous_texture,
+                mip_level: 0,
+                origin: Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            Extent3d {
+                width: self.output_texture.width(),
+                height: self.output_texture.height(),
+                depth_or_array_layers: 1,
+            },
+        );
     }
 
     fn create_texture(device: &Device, size: Extent3d, format: TextureFormat) -> Texture {
@@ -127,16 +158,6 @@ impl ComputeContext {
                     },
                     count: None,
                 },
-                BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                },
             ],
         })
     }
@@ -146,7 +167,6 @@ impl ComputeContext {
         layout: &BindGroupLayout,
         output_texture_view: &TextureView,
         previous_texture_view: &TextureView,
-        accumulated_frames: &Buffer,
     ) -> BindGroup {
         device.create_bind_group(&BindGroupDescriptor {
             label: Some("Compute BindGroup"),
@@ -159,10 +179,6 @@ impl ComputeContext {
                 BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::TextureView(previous_texture_view),
-                },
-                BindGroupEntry {
-                    binding: 2,
-                    resource: accumulated_frames.as_entire_binding(),
                 },
             ],
         })

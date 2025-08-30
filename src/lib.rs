@@ -1,9 +1,6 @@
 use log::info;
 use render_context::RenderContext;
-use wgpu::{
-    CommandEncoderDescriptor, ComputePassDescriptor, Extent3d, Origin3d, RenderPassDescriptor,
-    TexelCopyTextureInfo, TextureViewDescriptor,
-};
+use wgpu::{CommandEncoderDescriptor, TextureViewDescriptor};
 use winit::{application::ApplicationHandler, event::WindowEvent};
 
 mod gpu_manager;
@@ -89,11 +86,6 @@ impl ApplicationHandler for App<'_> {
                     0,
                     &self.frame.to_be_bytes(),
                 );
-                gpu_manager.queue().write_buffer(
-                    &compute_context.accumulated_frames,
-                    0,
-                    &self.frame.to_be_bytes(),
-                );
 
                 let output = gpu_manager.surface().get_current_texture().unwrap();
 
@@ -103,69 +95,14 @@ impl ApplicationHandler for App<'_> {
                         .create_command_encoder(&CommandEncoderDescriptor {
                             label: Some("Command Enconder"),
                         });
-                {
-                    let mut compute_pass = encoder.begin_compute_pass(&ComputePassDescriptor {
-                        label: Some("Compute Pass"),
-                        timestamp_writes: None,
-                    });
+                compute_context.draw(&mut encoder);
 
-                    compute_pass.set_pipeline(&compute_context.compute_pipeline);
-                    compute_pass.set_bind_group(0, &compute_context.textures_bind_group, &[]);
-                    compute_pass.set_bind_group(1, &compute_context.settings_bind_group, &[]);
-                    compute_pass.dispatch_workgroups(
-                        compute_context.output_texture.width() / 8 + 1,
-                        compute_context.output_texture.height() / 8 + 1,
-                        1,
-                    );
-                }
-
-                encoder.copy_texture_to_texture(
-                    TexelCopyTextureInfo {
-                        texture: &compute_context.output_texture,
-                        mip_level: 0,
-                        origin: Origin3d::ZERO,
-                        aspect: wgpu::TextureAspect::All,
-                    },
-                    TexelCopyTextureInfo {
-                        texture: &compute_context.previous_texture,
-                        mip_level: 0,
-                        origin: Origin3d::ZERO,
-                        aspect: wgpu::TextureAspect::All,
-                    },
-                    Extent3d {
-                        width: compute_context.output_texture.width(),
-                        height: compute_context.output_texture.height(),
-                        depth_or_array_layers: 1,
-                    },
+                render_context.draw_to_texture(
+                    &mut encoder,
+                    &output
+                        .texture
+                        .create_view(&TextureViewDescriptor::default()),
                 );
-
-                {
-                    let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
-                        label: Some("RenderPass"),
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: &output
-                                .texture
-                                .create_view(&TextureViewDescriptor::default()),
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(wgpu::Color {
-                                    r: 0.1,
-                                    g: 0.2,
-                                    b: 0.3,
-                                    a: 1.0,
-                                }),
-                                store: wgpu::StoreOp::Store,
-                            },
-                        })],
-                        depth_stencil_attachment: None,
-                        timestamp_writes: None,
-                        occlusion_query_set: None,
-                    });
-
-                    render_pass.set_bind_group(0, &render_context.bind_group, &[]);
-                    render_pass.set_pipeline(&render_context.pipeline);
-                    render_pass.draw(0..3, 0..3);
-                }
 
                 gpu_manager
                     .queue()

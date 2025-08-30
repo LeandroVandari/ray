@@ -1,13 +1,9 @@
 @group(0) @binding(0) var texture: texture_storage_2d<rgba8unorm, write>;
 @group(0) @binding(1) var previous: texture_2d<f32>;
-@group(0) @binding(2) var<uniform> accumulated_frames: u32;
 
 @group(1) @binding(0) var<storage, read> spheres: array<Sphere>;
 @group(1) @binding(1) var<uniform> frame: u32;
 
-fn length_squared(vector: vec3<f32>) -> f32 {
-    return pow(vector.x, 2.) + pow(vector.y, 2.) + pow(vector.z, 2.);
-}
 
 const MAGENTA = vec3(0.74, 0.02, 0.84);
 
@@ -15,6 +11,7 @@ const MAGENTA = vec3(0.74, 0.02, 0.84);
 const SAMPLES_PER_PIXEL = 10u;
 const PIXEL_SAMPLES_SCALE = 1.0/f32(SAMPLES_PER_PIXEL);
 const MAX_RAY_BOUNCES = 50u;
+const CONTRIBUTION = 0.1f;
 
 @compute @workgroup_size(8,8,1)
 fn main_compute(
@@ -42,8 +39,13 @@ fn main_compute(
     let ray_color = vec4<f32>(sqrt(color*PIXEL_SAMPLES_SCALE), 1.0);
 
     let previous_color = textureLoad(previous, location, 0);
-    let weight = min(30u, accumulated_frames);
-    var output_color = (previous_color*f32(weight) + ray_color) / f32(weight + 1u);
+
+    // If this is the first frame, fully use the ray color.
+    var contribution = CONTRIBUTION;
+    if frame == 0 {
+        contribution = 1f;
+    }
+    let output_color = vec4(((previous_color * (1f-contribution)) + (ray_color * contribution)).xyz, 1.0);
 
     textureStore(texture, location, output_color);
 }
