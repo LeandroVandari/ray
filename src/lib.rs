@@ -1,6 +1,8 @@
+use anyhow::{Result, bail};
 use log::info;
+use pollster::FutureExt;
 use render_context::RenderContext;
-use wgpu::{CommandEncoderDescriptor, TextureViewDescriptor};
+use wgpu::{CommandEncoderDescriptor, Texture, TextureViewDescriptor};
 use winit::{application::ApplicationHandler, event::WindowEvent};
 
 mod gpu_manager;
@@ -95,8 +97,8 @@ impl ApplicationHandler for App<'_> {
                         .create_command_encoder(&CommandEncoderDescriptor {
                             label: Some("Command Enconder"),
                         });
-                compute_context.draw(&mut encoder);
 
+                compute_context.draw(&mut encoder);
                 render_context.draw_to_texture(
                     &mut encoder,
                     &output
@@ -116,4 +118,73 @@ impl ApplicationHandler for App<'_> {
             _ => (),
         }
     }
+}
+
+pub fn write_to_file<SurfaceManager>(
+    gpu_manager: &GpuManager<SurfaceManager>,
+    texture: &Texture,
+) -> Result<()> {
+    const U32_SIZE: u32 = std::mem::size_of::<u32>() as u32;
+
+    let output_buffer_size = (U32_SIZE * texture.width() * texture.height()) as wgpu::BufferAddress;
+
+    let output_buffer_desc = wgpu::BufferDescriptor {
+        label: Some("Output Buffer"),
+        size: output_buffer_size,
+        usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+        mapped_at_creation: false,
+    };
+
+    let output_buffer = gpu_manager.device().create_buffer(&output_buffer_desc);
+
+    let mut encoder = gpu_manager
+        .device()
+        .create_command_encoder(&CommandEncoderDescriptor::default());
+
+    encoder.copy_texture_to_buffer(
+        wgpu::TexelCopyTextureInfoBase {
+            texture,
+            mip_level: 0,
+            origin: wgpu::Origin3d::ZERO,
+            aspect: wgpu::TextureAspect::All,
+        },
+        wgpu::TexelCopyBufferInfoBase {
+            buffer: &output_buffer,
+            layout: wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(U32_SIZE * texture.width()),
+                rows_per_image: Some(texture.height()),
+            },
+        },
+        texture.size(),
+    );
+
+    gpu_manager.queue().submit(Some(encoder.finish()));
+
+    {
+        let buffer_slice = output_buffer.slice(..);
+
+        let (tx, rx) = futures_intrusive::channel::shared::oneshot_channel();
+
+        buffer_slice.map_async(wgpu::MapMode::Read, move |result| tx.send(result).unwrap());
+
+        gpu_manager.device().poll(wgpu::Maintain::Wait);
+
+        rx.receive().block_on();
+
+        let data = buffer_slice.get_mapped_range();
+
+        use image::{ImageBuffer, Rgba};
+        let Some(buffer) =
+            ImageBuffer::<Rgba<u8>, _>::from_raw(texture.width(), texture.height(), data)
+        else {
+            bail!("Couldn't save image to file.")
+        };
+
+        buffer.save("output.png")?;
+    }
+
+    output_buffer.unmap();
+
+    Ok(())
 }
