@@ -1,7 +1,8 @@
 
 struct Sphere {
     center: vec3<f32>,
-    radius: f32
+    radius: f32,
+    material: Material
 };
 
 
@@ -21,7 +22,7 @@ fn hit_sphere(sphere: Sphere, ray: Ray, interval: Interval, hit_record: ptr<func
 
     var root = (h - disc_root) / a;
     if root <= interval.min || root >= interval.max {
-        root = (h + disc_root) / a;
+        root = (h + disc_root) / a; 
         if root <= interval.min || root >= interval.max {
             return false;
         }
@@ -29,6 +30,7 @@ fn hit_sphere(sphere: Sphere, ray: Ray, interval: Interval, hit_record: ptr<func
 
     (*hit_record).t = root;
     (*hit_record).point = ray_at(ray, root);
+    (*hit_record).material = sphere.material;
     let outward_normal = ((*hit_record).point - sphere.center) / sphere.radius;
     set_face_normal(hit_record, ray, outward_normal);
 

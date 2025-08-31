@@ -251,6 +251,7 @@ impl ComputeContext {
                     include_str!("shaders/compute/sphere.wgsl"),
                     include_str!("shaders/compute/ray.wgsl"),
                     include_str!("shaders/compute/hit_record.wgsl"),
+                    include_str!("shaders/compute/material.wgsl"),
                     include_str!("shaders/compute/camera.wgsl"),
                     include_str!("shaders/compute/main.wgsl")
                 )
