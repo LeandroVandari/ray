@@ -61,15 +61,14 @@ fn ray_color(ray: Ray, state: ptr<function, u32>) -> vec3<f32> {
     var color = vec3(1.);
     for (var bounce = 0u; bounce < MAX_RAY_BOUNCES; bounce++) {
         if closest_hit(new_ray, Interval(0.001, F32_MAX), &hit_record) {
-            return hit_record.material.albedo;
-            // if scatter(new_ray, hit_record, hit_record.material, &scatter_ray, state) {
-            //     color *= scatter_ray.attenuation;
-            //     new_ray = scatter_ray.ray;
-            // }
-            // else {
-            //     color = MAGENTA;
-            // }
-            // continue;
+            if scatter(new_ray, hit_record, hit_record.material, &scatter_ray, state) {
+                color *= scatter_ray.attenuation;
+                new_ray = scatter_ray.ray;
+            }
+            else {
+                color = MAGENTA;
+            }
+            continue;
         }
         else {
             let unit_direction = normalize(new_ray.direction);

@@ -1,7 +1,7 @@
 pub const LAMBERTIAN: u32 = 0;
 pub const METAL: u32 = 1;
 
-#[repr(C)]
+#[repr(C, packed)]
 #[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Material {
     ty: u32,

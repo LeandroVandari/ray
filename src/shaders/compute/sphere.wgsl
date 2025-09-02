@@ -2,7 +2,7 @@
 struct Sphere {
     center: vec3<f32>,
     radius: f32,
-    material: Material
+    material: Material,
 };
 
 

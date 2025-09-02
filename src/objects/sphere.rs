@@ -5,7 +5,9 @@ use super::Material;
 pub struct Sphere {
     center: [f32; 3],
     radius: f32,
+    padding: [u32; 3],
     material: Material,
+    other_padding: [u32; 1],
 }
 
 impl Sphere {
@@ -14,6 +16,8 @@ impl Sphere {
             center,
             radius,
             material,
+            padding: [0; 3],
+            other_padding: [0; 1],
         }
     }
 }
