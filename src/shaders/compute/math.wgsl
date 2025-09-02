@@ -13,7 +13,3 @@ fn near_zero(vector: vec3<f32>) -> bool {
     return any(vec3(v.x<s, v.y < s, v.z < s));
 
 }
-
-fn reflect(v: vec3<f32>, n: vec3<f32>) -> vec3<f32> {
-    return v - 2.*dot(v, n) * n;
-}

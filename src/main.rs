@@ -1,4 +1,4 @@
-use ray::objects::{Material, Sphere, material};
+use ray::objects::material;
 use winit::event_loop::EventLoop;
 
 fn main() {

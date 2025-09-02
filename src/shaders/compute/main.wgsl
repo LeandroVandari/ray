@@ -64,6 +64,7 @@ fn ray_color(ray: Ray, state: ptr<function, u32>) -> vec3<f32> {
             if scatter(new_ray, hit_record, hit_record.material, &scatter_ray, state) {
                 color *= scatter_ray.attenuation;
                 new_ray = scatter_ray.ray;
+              //  return vec3(f32(hit_record.material.ty));
             }
             else {
                 color = MAGENTA;
