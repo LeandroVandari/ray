@@ -6,9 +6,32 @@ use wgpu::{CommandEncoderDescriptor, TextureFormat};
 use crate::{
     compute_context::ComputeContext,
     gpu_manager::GpuManager,
-    objects::{Material, Sphere, material},
+    objects::{Sphere, material},
     render_context::RenderContext,
 };
+
+const SPHERES: [Sphere; 4] = [
+    Sphere::new(
+        [0., -100.5, -1.0],
+        100.,
+        material::Material::new(material::LAMBERTIAN, [0.8, 0.8, 0.]),
+    ),
+    Sphere::new(
+        [0., 0., -1.2],
+        0.5,
+        material::Material::new(material::LAMBERTIAN, [0.1, 0.2, 0.5]),
+    ),
+    Sphere::new(
+        [-1., 0., -1.],
+        0.5,
+        material::Material::new(material::METAL, [0.8, 0.8, 0.8]),
+    ),
+    Sphere::new(
+        [1., 0., -1.],
+        0.5,
+        material::Material::new(material::METAL, [0.8, 0.6, 0.2]),
+    ),
+];
 
 #[test]
 fn create_gpu_manager() {
@@ -19,15 +42,7 @@ fn create_gpu_manager() {
 fn create_compute_context() {
     let gpu_manager = GpuManager::simple().block_on().unwrap();
 
-    let compute_ctx = ComputeContext::new(
-        gpu_manager.device(),
-        (100, 100),
-        &[Sphere::new(
-            [0., 0., 0.],
-            3.0,
-            Material::new(material::LAMBERTIAN, [0.8, 0.8, 0.8]),
-        )],
-    );
+    let compute_ctx = ComputeContext::new(gpu_manager.device(), (100, 100), &SPHERES);
 
     dbg!(compute_ctx);
 }
@@ -35,15 +50,7 @@ fn create_compute_context() {
 #[test]
 fn create_render_context() {
     let gpu_manager = GpuManager::simple().block_on().unwrap();
-    let compute_ctx = ComputeContext::new(
-        gpu_manager.device(),
-        (100, 100),
-        &[Sphere::new(
-            [0., 0., 0.],
-            3.0,
-            Material::new(material::LAMBERTIAN, [0.8, 0.8, 0.8]),
-        )],
-    );
+    let compute_ctx = ComputeContext::new(gpu_manager.device(), (100, 100), &SPHERES);
 
     let render_ctx = RenderContext::new(
         gpu_manager.device(),
@@ -58,32 +65,7 @@ fn create_render_context() {
 fn draw_scene() {
     let gpu_manager = GpuManager::simple().block_on().unwrap();
 
-    let compute_ctx = ComputeContext::new(
-        gpu_manager.device(),
-        (100, 100),
-        &[
-            Sphere::new(
-                [0., -100.5, -1.0],
-                100.,
-                material::Material::new(material::LAMBERTIAN, [0.8, 0.8, 0.]),
-            ),
-            Sphere::new(
-                [0., 0., -1.2],
-                0.5,
-                material::Material::new(material::LAMBERTIAN, [0.1, 0.2, 0.5]),
-            ),
-            Sphere::new(
-                [-1., 0., -1.],
-                0.5,
-                material::Material::new(material::METAL, [0.8, 0.8, 0.8]),
-            ),
-            Sphere::new(
-                [1., 0., -1.],
-                0.5,
-                material::Material::new(material::METAL, [0.8, 0.6, 0.2]),
-            ),
-        ],
-    );
+    let compute_ctx = ComputeContext::new(gpu_manager.device(), (100, 100), &SPHERES);
 
     let mut encoder = gpu_manager
         .device()
@@ -102,28 +84,7 @@ fn render_to_file() {
         gpu_manager.device(),
         // Must be a multiple of 256 (1920 works ???)
         (1920, 1080),
-        &[
-            Sphere::new(
-                [0., -100.5, -1.0],
-                100.,
-                material::Material::new(material::LAMBERTIAN, [0.8, 0.8, 0.]),
-            ),
-            Sphere::new(
-                [0., 0., -1.2],
-                0.5,
-                material::Material::new(material::LAMBERTIAN, [0.1, 0.2, 0.5]),
-            ),
-            Sphere::new(
-                [-1., 0., -1.],
-                0.5,
-                material::Material::new(material::METAL, [0.8, 0.8, 0.8]),
-            ),
-            Sphere::new(
-                [1., 0., -1.],
-                0.5,
-                material::Material::new(material::METAL, [0.8, 0.6, 0.2]),
-            ),
-        ],
+        &SPHERES,
     );
 
     let mut encoder = gpu_manager

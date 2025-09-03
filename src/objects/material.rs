@@ -10,8 +10,8 @@ pub struct Material {
 }
 
 impl Material {
-    pub fn new(ty: u32, albedo: [f32; 3]) -> Self {
-        assert!([LAMBERTIAN, METAL].contains(&ty));
+    pub const fn new(ty: u32, albedo: [f32; 3]) -> Self {
+        assert!(ty == LAMBERTIAN || ty == METAL);
 
         Self {
             ty,
