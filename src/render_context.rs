@@ -1,3 +1,5 @@
+use std::sync::{Arc, atomic::AtomicU32};
+
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, ColorTargetState, CommandEncoder, Device, FragmentState,
@@ -10,8 +12,9 @@ use crate::compute_context::ComputeContext;
 
 #[derive(Debug)]
 pub struct RenderContext {
-    pub(crate) bind_group: BindGroup,
+    pub(crate) bind_groups: [BindGroup; 2],
     pub(crate) pipeline: RenderPipeline,
+    frame: Arc<AtomicU32>,
 }
 
 impl RenderContext {
@@ -21,19 +24,24 @@ impl RenderContext {
         output_format: TextureFormat,
     ) -> Self {
         let bind_group_layout = Self::create_bind_group_layout(device);
-        let bind_group = Self::create_bind_group(
-            device,
-            &compute_context
-                .output_texture
-                .create_view(&TextureViewDescriptor::default()),
-            &bind_group_layout,
-        );
+        let bind_groups = [
+            &compute_context.output_texture,
+            &compute_context.previous_texture,
+        ]
+        .map(|texture| {
+            Self::create_bind_group(
+                device,
+                &texture.create_view(&TextureViewDescriptor::default()),
+                &bind_group_layout,
+            )
+        });
 
         let pipeline = Self::create_render_pipeline(device, &bind_group_layout, output_format);
 
         Self {
             pipeline,
-            bind_group,
+            bind_groups,
+            frame: compute_context.frame.clone(),
         }
     }
 
@@ -58,7 +66,11 @@ impl RenderContext {
             occlusion_query_set: None,
         });
 
-        render_pass.set_bind_group(0, &self.bind_group, &[]);
+        render_pass.set_bind_group(
+            0,
+            &self.bind_groups[self.frame.load(std::sync::atomic::Ordering::Acquire) as usize % 2],
+            &[],
+        );
         render_pass.set_pipeline(&self.pipeline);
         render_pass.draw(0..3, 0..3);
     }

@@ -1,3 +1,5 @@
+use std::sync::{Arc, atomic::AtomicU32};
+
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, Buffer, BufferUsages, CommandEncoder, ComputePassDescriptor,
@@ -16,8 +18,9 @@ pub struct ComputeContext {
 
     pub(crate) previous_texture: Texture,
     pub(crate) output_texture: Texture,
-    pub(crate) textures_bind_group: BindGroup,
+    pub(crate) textures_bind_groups: [BindGroup; 2],
 
+    pub(crate) frame: Arc<AtomicU32>,
     pub(crate) frame_uniform: Buffer,
     pub(crate) settings_bind_group: BindGroup,
 }
@@ -39,12 +42,18 @@ impl ComputeContext {
         let textures_bind_group_layout =
             Self::create_textures_bind_group_layout(device, output_format);
 
-        let textures_bind_group = Self::create_textures_bind_group(
-            device,
-            &textures_bind_group_layout,
-            &output_texture_view,
-            &previous_texture_view,
-        );
+        let textures_bind_groups = [
+            (&output_texture_view, &previous_texture_view),
+            (&previous_texture_view, &output_texture_view),
+        ]
+        .map(|(write_to, read_from)| {
+            Self::create_textures_bind_group(
+                device,
+                &textures_bind_group_layout,
+                write_to,
+                read_from,
+            )
+        });
 
         let sphere_buffer = Self::create_sphere_buffer(device, spheres);
         let frame_uniform = device.create_buffer_init(&BufferInitDescriptor {
@@ -70,14 +79,18 @@ impl ComputeContext {
         Self {
             compute_pipeline,
             output_texture,
-            textures_bind_group,
+            textures_bind_groups,
             previous_texture,
+            frame: Arc::new(AtomicU32::new(0)),
             frame_uniform,
             settings_bind_group,
         }
     }
 
     pub fn draw(&self, encoder: &mut CommandEncoder) {
+        let frame = self
+            .frame
+            .fetch_add(1, std::sync::atomic::Ordering::Release) as usize;
         {
             let mut compute_pass = encoder.begin_compute_pass(&ComputePassDescriptor {
                 label: Some("Compute Pass"),
@@ -85,7 +98,7 @@ impl ComputeContext {
             });
 
             compute_pass.set_pipeline(&self.compute_pipeline);
-            compute_pass.set_bind_group(0, &self.textures_bind_group, &[]);
+            compute_pass.set_bind_group(0, &self.textures_bind_groups[frame % 2], &[]);
             compute_pass.set_bind_group(1, &self.settings_bind_group, &[]);
             compute_pass.dispatch_workgroups(
                 self.output_texture.width() / 8 + 1,
@@ -93,26 +106,6 @@ impl ComputeContext {
                 1,
             );
         }
-
-        encoder.copy_texture_to_texture(
-            TexelCopyTextureInfo {
-                texture: &self.output_texture,
-                mip_level: 0,
-                origin: Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            TexelCopyTextureInfo {
-                texture: &self.previous_texture,
-                mip_level: 0,
-                origin: Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            Extent3d {
-                width: self.output_texture.width(),
-                height: self.output_texture.height(),
-                depth_or_array_layers: 1,
-            },
-        );
     }
 
     fn create_texture(device: &Device, size: Extent3d, format: TextureFormat) -> Texture {
