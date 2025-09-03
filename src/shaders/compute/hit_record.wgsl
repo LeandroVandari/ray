@@ -3,7 +3,8 @@ struct HitRecord {
     point: vec3<f32>,
     normal: vec3<f32>,
     t: f32,
-    front_face: bool
+    front_face: bool,
+    material: Material
 };
 
 fn set_face_normal(record: ptr<function, HitRecord>, ray: Ray, outward_normal: vec3<f32>) {

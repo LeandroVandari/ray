@@ -1,3 +1,4 @@
+use ray::objects::material;
 use winit::event_loop::EventLoop;
 
 fn main() {
@@ -6,8 +7,26 @@ fn main() {
     let event_loop = EventLoop::new().unwrap();
     event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
     let spheres = vec![
-        ray::objects::Sphere::new([0., 0., -1.0], 0.5),
-        ray::objects::Sphere::new([0.0, -100.5, -1.0], 100.),
+        ray::objects::Sphere::new(
+            [0., -100.5, -1.0],
+            100.,
+            material::Material::new(material::LAMBERTIAN, [0.8, 0.8, 0.]),
+        ),
+        ray::objects::Sphere::new(
+            [0., 0., -1.2],
+            0.5,
+            material::Material::new(material::LAMBERTIAN, [0.1, 0.2, 0.5]),
+        ),
+        ray::objects::Sphere::new(
+            [-1., 0., -1.],
+            0.5,
+            material::Material::new(material::METAL, [0.8, 0.8, 0.8]),
+        ),
+        ray::objects::Sphere::new(
+            [1., 0., -1.],
+            0.5,
+            material::Material::new(material::METAL, [0.8, 0.6, 0.2]),
+        ),
     ];
     let mut app = ray::App::new(spheres);
 

@@ -55,29 +55,32 @@ fn main_compute(
 fn ray_color(ray: Ray, state: ptr<function, u32>) -> vec3<f32> {
 
     var hit_record = HitRecord();
-    
+    var scatter_ray = ScatteredRay();
     var new_ray = ray;
 
-    var bounces = 0u;
-    var color = vec3(0.);
+    var color = vec3(1.);
     for (var bounce = 0u; bounce < MAX_RAY_BOUNCES; bounce++) {
         if closest_hit(new_ray, Interval(0.001, F32_MAX), &hit_record) {
-            let direction = hit_record.normal + rngUnitVector(state);
-            new_ray.origin = hit_record.point;
-            new_ray.direction = direction;
-            bounces++;
+            if scatter(new_ray, hit_record, hit_record.material, &scatter_ray, state) {
+                color *= scatter_ray.attenuation;
+                new_ray = scatter_ray.ray;
+              //  return vec3(f32(hit_record.material.ty));
+            }
+            else {
+                color = MAGENTA;
+            }
             continue;
         }
         else {
             let unit_direction = normalize(new_ray.direction);
             let a = 0.5 * (unit_direction.y + 1.0);
-            color = (1.0 - a) * vec3<f32>(1.0) + a * vec3<f32>(0.5, 0.7, 1.0);
+            color *= (1.0 - a) * vec3<f32>(1.0) + a * vec3<f32>(0.5, 0.7, 1.0);
             break;
         }
 
 
     }
-    return color * pow(0.5, f32(bounces));
+    return color;
     
 }
 
