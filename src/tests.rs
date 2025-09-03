@@ -82,8 +82,8 @@ fn render_to_file() {
 
     let compute_ctx = ComputeContext::new(
         gpu_manager.device(),
-        // Must be a multiple of 256 (1920 works ???)
-        (1920, 1080),
+        // Must be a multiple of 128
+        (128, 128),
         &SPHERES,
     );
 
