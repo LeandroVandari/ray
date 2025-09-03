@@ -3,10 +3,9 @@ use std::sync::{Arc, atomic::AtomicU32};
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, Buffer, BufferUsages, CommandEncoder, ComputePassDescriptor,
-    ComputePipeline, ComputePipelineDescriptor, Device, Extent3d, Origin3d,
-    PipelineCompilationOptions, PipelineLayoutDescriptor, ShaderModuleDescriptor,
-    TexelCopyTextureInfo, Texture, TextureDescriptor, TextureFormat, TextureUsages, TextureView,
-    TextureViewDescriptor,
+    ComputePipeline, ComputePipelineDescriptor, Device, Extent3d, PipelineCompilationOptions,
+    PipelineLayoutDescriptor, ShaderModuleDescriptor, Texture, TextureDescriptor, TextureFormat,
+    TextureUsages, TextureView, TextureViewDescriptor,
     util::{BufferInitDescriptor, DeviceExt},
 };
 

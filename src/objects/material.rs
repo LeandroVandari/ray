@@ -10,6 +10,7 @@ pub struct Material {
 }
 
 impl Material {
+    #[must_use]
     pub const fn new(ty: u32, albedo: [f32; 3]) -> Self {
         assert!(ty == LAMBERTIAN || ty == METAL);
 

@@ -10,6 +10,7 @@ pub struct Sphere {
 }
 
 impl Sphere {
+    #[must_use]
     pub const fn new(center: [f32; 3], radius: f32, material: Material) -> Self {
         Self {
             center,

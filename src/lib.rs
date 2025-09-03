@@ -28,6 +28,7 @@ pub struct App<'window> {
 }
 
 impl App<'_> {
+    #[must_use]
     pub fn new(spheres: Vec<objects::Sphere>) -> Self {
         Self {
             gpu_manager: None,
@@ -56,7 +57,7 @@ impl ApplicationHandler for App<'_> {
             gpu_manager.device(),
             self.compute_context.as_ref().unwrap(),
             gpu_manager.config().format,
-        ))
+        ));
     }
 
     fn window_event(
