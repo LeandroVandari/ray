@@ -1,11 +1,11 @@
 use std::path::Path;
 
+use gpu_manager::GpuManager;
 use pollster::FutureExt;
 use wgpu::{CommandEncoderDescriptor, TextureFormat};
 
 use crate::{
     compute_context::ComputeContext,
-    gpu_manager::GpuManager,
     objects::{Sphere, material},
     render_context::RenderContext,
 };
@@ -32,11 +32,6 @@ const SPHERES: [Sphere; 4] = [
         material::Material::new(material::METAL, [0.8, 0.6, 0.2]),
     ),
 ];
-
-#[test]
-fn create_gpu_manager() {
-    assert!(pollster::block_on(GpuManager::simple()).is_ok());
-}
 
 #[test]
 fn create_compute_context() {

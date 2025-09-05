@@ -1,14 +1,12 @@
 use std::path::Path;
 
 use anyhow::{Result, bail};
+use gpu_manager::{GpuManager, WindowManager};
 use log::info;
 use pollster::FutureExt;
 use render_context::RenderContext;
 use wgpu::{CommandEncoderDescriptor, Texture, TextureViewDescriptor};
 use winit::{application::ApplicationHandler, event::WindowEvent};
-
-mod gpu_manager;
-pub use gpu_manager::{GpuManager, WindowManager};
 
 mod compute_context;
 use compute_context::ComputeContext;
@@ -172,7 +170,7 @@ pub fn write_to_file<SurfaceManager>(
 
         buffer_slice.map_async(wgpu::MapMode::Read, move |result| tx.send(result).unwrap());
 
-        gpu_manager.device().poll(wgpu::Maintain::Wait);
+        gpu_manager.device().poll(wgpu::PollType::Wait)?;
 
         rx.receive().block_on();
 
