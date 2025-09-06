@@ -118,8 +118,7 @@ impl ComputeContext {
             format,
             usage: TextureUsages::STORAGE_BINDING
                 | TextureUsages::TEXTURE_BINDING
-                | TextureUsages::COPY_SRC
-                | TextureUsages::COPY_DST,
+                | TextureUsages::COPY_SRC,
             view_formats: &[],
         })
     }
