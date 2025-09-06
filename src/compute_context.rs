@@ -57,7 +57,8 @@ impl ComputeContext {
         let sphere_buffer = Self::create_sphere_buffer(device, spheres);
         let frame_uniform = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("Frame Uniform"),
-            contents: &0u32.to_be_bytes(),
+            // Uniform buffers must be aligned to 16 bytes
+            contents: &0u128.to_be_bytes(),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
