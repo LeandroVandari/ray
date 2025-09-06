@@ -13,4 +13,11 @@ log = "0.4.27"
 pollster = "0.4.0"
 wgpu = "26.0.1"
 winit = "0.30.9"
-gpu_manager = {git = "https://github.com/LeandroVandari/gpu_manager.git"}
+gpu_manager = { git = "https://github.com/LeandroVandari/gpu_manager.git" }
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = true
+strip = true
+incremental = false
