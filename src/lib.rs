@@ -87,7 +87,8 @@ impl ApplicationHandler for App<'_> {
                 gpu_manager.queue().write_buffer(
                     &compute_context.frame_uniform,
                     0,
-                    &self.frame.to_be_bytes(),
+                    // Uniform buffers must be aligned to 16 bytes
+                    &[self.frame.to_be_bytes(), [0; 4], [0; 4], [0; 4]].concat(),
                 );
 
                 let output = gpu_manager.surface().get_current_texture().unwrap();
