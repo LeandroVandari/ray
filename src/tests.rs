@@ -77,7 +77,7 @@ fn render_to_file() {
 
     let compute_ctx = ComputeContext::new(
         gpu_manager.device(),
-        // Must be a multiple of 128
+        // Width must be a multiple of 128
         (128, 128),
         &SPHERES,
     );
@@ -94,8 +94,44 @@ fn render_to_file() {
     assert!(
         super::write_to_file(
             &gpu_manager,
+            &compute_ctx.previous_texture,
+            Some(Path::new("one_frame_test.png"))
+        )
+        .is_ok()
+    );
+}
+
+#[test]
+fn render_multiple_frames() {
+    let gpu_manager = GpuManager::simple().block_on().unwrap();
+
+    let compute_ctx = ComputeContext::new(
+        gpu_manager.device(),
+        // Width must be a multiple of 128
+        (128, 128),
+        &SPHERES,
+    );
+
+    for i in 0u32..10 {
+        let mut encoder = gpu_manager
+            .device()
+            .create_command_encoder(&CommandEncoderDescriptor {
+                label: Some("Test Encoder"),
+            });
+        gpu_manager.queue().write_buffer(
+            &compute_ctx.frame_uniform,
+            0,
+            &[i.to_be_bytes(), [0; 4], [0; 4], [0; 4]].concat(),
+        );
+        compute_ctx.draw(&mut encoder);
+        gpu_manager.queue().submit(Some(encoder.finish()));
+    }
+
+    assert!(
+        super::write_to_file(
+            &gpu_manager,
             &compute_ctx.output_texture,
-            Some(Path::new("test_output.png"))
+            Some(Path::new("multiple_frames_test.png"))
         )
         .is_ok()
     );
