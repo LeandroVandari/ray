@@ -75,12 +75,12 @@ fn ray_color(ray: Ray, state: ptr<function, u32>) -> vec3<f32> {
             let unit_direction = normalize(new_ray.direction);
             let a = 0.5 * (unit_direction.y + 1.0);
             color *= (1.0 - a) * vec3<f32>(1.0) + a * vec3<f32>(0.5, 0.7, 1.0);
-            break;
+            return color;
         }
 
 
     }
-    return color;
+    return vec3(0.);
     
 }
 
