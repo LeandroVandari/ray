@@ -4,7 +4,8 @@ const METAL = 1u;
 
 struct Material {
     ty: u32,
-    albedo: vec3<f32>
+    fuzziness: f32,
+    albedo: vec3<f32>,
 }
 
 struct ScatteredRay {
@@ -18,7 +19,7 @@ fn scatter(ray: Ray, hit_record: HitRecord, material: Material, scattered: ptr<f
             var scatter_direction = hit_record.normal + rngUnitVector(rng_state);
 
             if near_zero(scatter_direction) {
-                scatter_direction =  hit_record.normal;
+                scatter_direction = hit_record.normal;
             }
 
             (*scattered).ray = Ray(hit_record.point, scatter_direction);
@@ -27,11 +28,12 @@ fn scatter(ray: Ray, hit_record: HitRecord, material: Material, scattered: ptr<f
         }
 
         case METAL: {
-            let reflected = reflect(ray.direction, hit_record.normal);
+            var reflected = reflect(ray.direction, hit_record.normal);
+            reflected = normalize(reflected) + (material.fuzziness * rngUnitVector(rng_state));
 
             (*scattered).ray = Ray(hit_record.point, reflected);
             (*scattered).attenuation = material.albedo;
-            return true;
+            return dot((*scattered).ray.direction, hit_record.normal) > 0.;
         }
 
 
@@ -39,5 +41,4 @@ fn scatter(ray: Ray, hit_record: HitRecord, material: Material, scattered: ptr<f
             return false;
         }
     }
-
 }
