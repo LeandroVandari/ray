@@ -98,7 +98,7 @@ impl ComputeContext {
             });
 
             compute_pass.set_pipeline(&self.compute_pipeline);
-            compute_pass.set_bind_group(0, &self.textures_bind_groups[frame % 2], &[]);
+            compute_pass.set_bind_group(0, &self.textures_bind_groups[(frame + 1) % 2], &[]);
             compute_pass.set_bind_group(1, &self.settings_bind_group, &[]);
             compute_pass.dispatch_workgroups(
                 self.output_texture.width() / 8 + 1,
