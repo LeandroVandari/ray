@@ -33,7 +33,7 @@ fn main_compute(
         color += ray_color(ray, &rng_state);
     }
 
-    let location = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
+    let location = vec2<u32>(u32(invocation_id.x), u32(invocation_id.y));
 
     // sqrt: convert to gamma space
     let ray_color = vec4<f32>(sqrt(color * PIXEL_SAMPLES_SCALE), 1.0);

@@ -109,8 +109,12 @@ impl ComputeContext {
     }
 
     fn create_texture(device: &Device, size: Extent3d, format: TextureFormat) -> Texture {
+        static TEXTURE_ID: AtomicU32 = AtomicU32::new(0);
         device.create_texture(&TextureDescriptor {
-            label: Some("Compute Output"),
+            label: Some(&format!(
+                "Compute Output {}",
+                TEXTURE_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            )),
             size,
             mip_level_count: 1,
             sample_count: 1,
