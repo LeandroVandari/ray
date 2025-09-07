@@ -14,22 +14,22 @@ const SPHERES: [Sphere; 4] = [
     Sphere::new(
         [0., -100.5, -1.0],
         100.,
-        material::Material::new(material::LAMBERTIAN, [0.8, 0.8, 0.]),
+        material::Material::new(material::LAMBERTIAN, [0.8, 0.8, 0.], None),
     ),
     Sphere::new(
         [0., 0., -1.2],
         0.5,
-        material::Material::new(material::LAMBERTIAN, [0.1, 0.2, 0.5]),
+        material::Material::new(material::LAMBERTIAN, [0.1, 0.2, 0.5], None),
     ),
     Sphere::new(
         [-1., 0., -1.],
         0.5,
-        material::Material::new(material::METAL, [0.8, 0.8, 0.8]),
+        material::Material::new(material::METAL, [0.8, 0.8, 0.8], Some(0.3)),
     ),
     Sphere::new(
         [1., 0., -1.],
         0.5,
-        material::Material::new(material::METAL, [0.8, 0.6, 0.2]),
+        material::Material::new(material::METAL, [0.8, 0.6, 0.2], Some(1.0)),
     ),
 ];
 

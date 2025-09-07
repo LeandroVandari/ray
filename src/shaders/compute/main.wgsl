@@ -9,7 +9,7 @@ const MAGENTA = vec3(0.74, 0.02, 0.84);
 
 // TODO: make into a uniform
 const SAMPLES_PER_PIXEL = 10u;
-const PIXEL_SAMPLES_SCALE = 1.0/f32(SAMPLES_PER_PIXEL);
+const PIXEL_SAMPLES_SCALE = 1.0 / f32(SAMPLES_PER_PIXEL);
 const MAX_RAY_BOUNCES = 50u;
 const CONTRIBUTION = 0.1f;
 
@@ -36,7 +36,7 @@ fn main_compute(
     let location = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
 
     // sqrt: convert to gamma space
-    let ray_color = vec4<f32>(sqrt(color*PIXEL_SAMPLES_SCALE), 1.0);
+    let ray_color = vec4<f32>(sqrt(color * PIXEL_SAMPLES_SCALE), 1.0);
 
     let previous_color = textureLoad(previous, location, 0);
 
@@ -45,7 +45,7 @@ fn main_compute(
     if frame == 0 {
         contribution = 1f;
     }
-    let output_color = vec4(((previous_color * (1f-contribution)) + (ray_color * contribution)).xyz, 1.0);
+    let output_color = vec4(mix(previous_color, ray_color, contribution).xyz, 0.);
 
     textureStore(texture, location, output_color);
 }
@@ -64,24 +64,19 @@ fn ray_color(ray: Ray, state: ptr<function, u32>) -> vec3<f32> {
             if scatter(new_ray, hit_record, hit_record.material, &scatter_ray, state) {
                 color *= scatter_ray.attenuation;
                 new_ray = scatter_ray.ray;
-              //  return vec3(f32(hit_record.material.ty));
-            }
-            else {
-                color = MAGENTA;
+               // return vec3(f32(hit_record.material.fuzziness));
+            } else {
+                return vec3(0.);
             }
             continue;
-        }
-        else {
+        } else {
             let unit_direction = normalize(new_ray.direction);
             let a = 0.5 * (unit_direction.y + 1.0);
-            color *= (1.0 - a) * vec3<f32>(1.0) + a * vec3<f32>(0.5, 0.7, 1.0);
+            color *= mix(vec3<f32>(1.0), vec3<f32>(0.5, 0.7, 1.0), a);
             break;
         }
-
-
     }
     return color;
-    
 }
 
 fn closest_hit(ray: Ray, interval: Interval, hit_record: ptr<function, HitRecord>) -> bool {
