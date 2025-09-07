@@ -10,6 +10,5 @@ fn length_squared(vector: vec3<f32>) -> f32 {
 fn near_zero(vector: vec3<f32>) -> bool {
     let s = 1e-8f;
     let v = abs(vector);
-    return any(vec3(v.x<s, v.y < s, v.z < s));
-
+    return all(vec3(v.x < s, v.y < s, v.z < s));
 }
