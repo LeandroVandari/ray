@@ -45,7 +45,7 @@ fn main_compute(
     if frame == 0 {
         contribution = 1f;
     }
-    let output_color = vec4(mix(previous_color, ray_color, contribution).xyz, 0.);
+    let output_color = vec4(mix(previous_color, ray_color, contribution).xyz, 1.);
 
     textureStore(texture, location, output_color);
 }
