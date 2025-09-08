@@ -111,7 +111,6 @@ impl ApplicationHandler for App<'_> {
                 gpu_manager
                     .queue()
                     .submit(std::iter::once(encoder.finish()));
-
                 output.present();
                 self.frame += 1;
                 gpu_manager.window().request_redraw();

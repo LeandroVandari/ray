@@ -19,7 +19,7 @@ fn rngNextFloat(state: ptr<function, u32>) -> f32 {
 fn rngUnitVector(state: ptr<function, u32>) -> vec3<f32> {
     let v = vec3(rngNextFloat(state), rngNextFloat(state), rngNextFloat(state));
 
-    return normalize(v) * 2. - 1.;
+    return normalize(v * 2. - 1.) ;
 }
 
 fn initRng(pixel: vec2<u32>, resolution: vec2<u32>, frame: u32) -> u32 {

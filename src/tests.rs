@@ -10,26 +10,27 @@ use crate::{
     render_context::RenderContext,
 };
 
-const SPHERES: [Sphere; 4] = [
+const SPHERES: [Sphere; 5] = [
     Sphere::new(
         [0., -100.5, -1.0],
         100.,
-        material::Material::new(material::LAMBERTIAN, [0.8, 0.8, 0.], None),
+        material::Material::lambertian([0.8, 0.8, 0.]),
     ),
     Sphere::new(
         [0., 0., -1.2],
         0.5,
-        material::Material::new(material::LAMBERTIAN, [0.1, 0.2, 0.5], None),
+        material::Material::lambertian([0.1, 0.2, 0.5]),
     ),
+    Sphere::new([-1., 0., -1.], 0.5, material::Material::dieletric(1.5)),
     Sphere::new(
         [-1., 0., -1.],
-        0.5,
-        material::Material::new(material::METAL, [0.8, 0.8, 0.8], Some(0.3)),
+        0.4,
+        material::Material::dieletric(1.0 / 1.5),
     ),
     Sphere::new(
         [1., 0., -1.],
         0.5,
-        material::Material::new(material::METAL, [0.8, 0.6, 0.2], Some(1.0)),
+        material::Material::metal([0.8, 0.6, 0.2], 1.0),
     ),
 ];
 

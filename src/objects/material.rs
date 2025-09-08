@@ -1,25 +1,51 @@
 pub const LAMBERTIAN: u32 = 0;
 pub const METAL: u32 = 1;
+pub const DIELETRIC: u32 = 2;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Material {
     ty: u32,
     fuzziness: f32,
-    padding: [u32; 2],
+    refractive_index: f32,
+    padding: f32,
     albedo: [f32; 3],
 }
 
+const ZERO_MATERIAL: Material = Material {
+    ty: 0,
+    fuzziness: 0.,
+    refractive_index: 0.,
+    padding: 0.,
+    albedo: [0.; 3],
+};
+
 impl Material {
     #[must_use]
-    pub const fn new(ty: u32, albedo: [f32; 3], fuzziness: Option<f32>) -> Self {
-        assert!(ty == LAMBERTIAN || ty == METAL);
-
+    pub const fn lambertian(albedo: [f32; 3]) -> Self {
         Self {
-            ty,
+            ty: LAMBERTIAN,
             albedo,
-            fuzziness: if let Some(f) = fuzziness { f } else { 0. },
-            padding: [0; 2],
+            ..ZERO_MATERIAL
+        }
+    }
+
+    #[must_use]
+    pub const fn metal(albedo: [f32; 3], fuzziness: f32) -> Self {
+        Self {
+            ty: METAL,
+            fuzziness,
+            albedo,
+            ..ZERO_MATERIAL
+        }
+    }
+
+    #[must_use]
+    pub const fn dieletric(refractive_index: f32) -> Self {
+        Self {
+            ty: DIELETRIC,
+            refractive_index,
+            ..ZERO_MATERIAL
         }
     }
 }

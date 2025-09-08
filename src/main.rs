@@ -10,22 +10,23 @@ fn main() {
         ray::objects::Sphere::new(
             [0., -100.5, -1.0],
             100.,
-            material::Material::new(material::LAMBERTIAN, [0.8, 0.8, 0.], None),
+            material::Material::lambertian([0.8, 0.8, 0.]),
         ),
         ray::objects::Sphere::new(
             [0., 0., -1.2],
             0.5,
-            material::Material::new(material::LAMBERTIAN, [0.1, 0.2, 0.5], None),
+            material::Material::lambertian([0.1, 0.2, 0.5]),
         ),
+        ray::objects::Sphere::new([-1., 0., -1.], 0.5, material::Material::dieletric(1.5)),
         ray::objects::Sphere::new(
             [-1., 0., -1.],
-            0.5,
-            material::Material::new(material::METAL, [0.8, 0.8, 0.8], Some(0.3)),
+            0.4,
+            material::Material::dieletric(1.0 / 1.5),
         ),
         ray::objects::Sphere::new(
             [1., 0., -1.],
             0.5,
-            material::Material::new(material::METAL, [0.8, 0.6, 0.2], Some(1.0)),
+            material::Material::metal([0.8, 0.6, 0.2], 1.0),
         ),
     ];
     let mut app = ray::App::new(spheres);
