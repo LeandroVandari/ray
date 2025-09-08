@@ -17,10 +17,11 @@ fn main() {
             0.5,
             material::Material::lambertian([0.1, 0.2, 0.5]),
         ),
+        ray::objects::Sphere::new([-1., 0., -1.], 0.5, material::Material::dieletric(1.5)),
         ray::objects::Sphere::new(
             [-1., 0., -1.],
-            0.5,
-            material::Material::metal([0.8, 0.8, 0.8], 0.3),
+            0.4,
+            material::Material::dieletric(1.0 / 1.5),
         ),
         ray::objects::Sphere::new(
             [1., 0., -1.],

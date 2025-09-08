@@ -41,11 +41,10 @@ impl Material {
     }
 
     #[must_use]
-    pub const fn dieletric(albedo: [f32; 3], refractive_index: f32) -> Self {
+    pub const fn dieletric(refractive_index: f32) -> Self {
         Self {
             ty: DIELETRIC,
             refractive_index,
-            albedo,
             ..ZERO_MATERIAL
         }
     }
