@@ -1,10 +1,12 @@
 const LAMBERTIAN = 0u;
 const METAL = 1u;
+const DIELETRIC = 2u;
 
 
 struct Material {
     ty: u32,
     fuzziness: f32,
+    refractive_index: f32,
     albedo: vec3<f32>,
 }
 
