@@ -16,12 +16,8 @@ fn rngNextFloat(state: ptr<function, u32>) -> f32 {
     return f32(x) / f32(0xffffffffu);
 }
 
-fn map_range(in: f32) -> f32 {
-    return (in * 2.) - 1.;
-}
-
 fn rngUnitVector(state: ptr<function, u32>) -> vec3<f32> {
-    let v = vec3(map_range(rngNextFloat(state)), map_range(rngNextFloat(state)), map_range(rngNextFloat(state)));
+    let v = vec3(rngNextFloat(state), rngNextFloat(state), rngNextFloat(state)) * 2. - 1.;
 
     return normalize(v);
 }
