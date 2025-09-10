@@ -4,12 +4,12 @@ use anyhow::{Result, bail};
 use gpu_manager::{GpuManager, WindowManager};
 use log::info;
 use pollster::FutureExt;
-use render_context::RenderContext;
+pub use render_context::RenderContext;
 use wgpu::{CommandEncoderDescriptor, Texture, TextureViewDescriptor};
 use winit::{application::ApplicationHandler, event::WindowEvent};
 
 mod compute_context;
-use compute_context::ComputeContext;
+pub use compute_context::ComputeContext;
 mod render_context;
 
 pub mod objects;
