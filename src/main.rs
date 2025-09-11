@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use ray::objects::material;
 use winit::event_loop::EventLoop;
 
@@ -6,27 +8,19 @@ fn main() {
 
     let event_loop = EventLoop::new().unwrap();
     event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
+
+    let r: f32 = (PI / 4.).cos();
+
     let spheres = vec![
         ray::objects::Sphere::new(
-            [0., -100.5, -1.0],
-            100.,
-            material::Material::lambertian([0.8, 0.8, 0.]),
+            [-r, 0., -1.],
+            r,
+            material::Material::lambertian([0., 0., 1.]),
         ),
         ray::objects::Sphere::new(
-            [0., 0., -1.2],
-            0.5,
-            material::Material::lambertian([0.1, 0.2, 0.5]),
-        ),
-        ray::objects::Sphere::new([-1., 0., -1.], 0.5, material::Material::dieletric(1.5)),
-        ray::objects::Sphere::new(
-            [-1., 0., -1.],
-            0.4,
-            material::Material::dieletric(1.0 / 1.5),
-        ),
-        ray::objects::Sphere::new(
-            [1., 0., -1.],
-            0.5,
-            material::Material::metal([0.8, 0.6, 0.2], 1.0),
+            [r, 0., -1.],
+            r,
+            material::Material::lambertian([1., 0., 0.]),
         ),
     ];
     let mut app = ray::App::new(spheres);
