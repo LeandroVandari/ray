@@ -16,9 +16,9 @@ pub fn benchmark(c: &mut Criterion) {
     instantiation.finish();
 
     let mut single_spheres = c.benchmark_group("Single Spheres");
-    for output_size in [(1920, 1080), (256, 256), (128, 128), (512, 512)] {
-        for (s, sphere) in SPHERES.iter().enumerate() {
-            for num_frames in [1, 5, 10, 60] {
+    for num_frames in [1, 5, 10, 60] {
+        for output_size in [(128, 128), (256, 256), (512, 512), (1920, 1080)] {
+            for (s, sphere) in SPHERES.iter().enumerate() {
                 single_spheres.bench_with_input(
                     format!(
                         "Draw sphere #{s} in resolution {output_size:?} in {num_frames} frames."
