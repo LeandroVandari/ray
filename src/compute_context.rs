@@ -4,8 +4,8 @@ use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, Buffer, BufferUsages, CommandEncoder, ComputePassDescriptor,
     ComputePipeline, ComputePipelineDescriptor, Device, Extent3d, PipelineCompilationOptions,
-    PipelineLayoutDescriptor, ShaderModuleDescriptor, Texture, TextureDescriptor, TextureFormat,
-    TextureUsages, TextureView, TextureViewDescriptor,
+    PipelineLayoutDescriptor, Queue, ShaderModuleDescriptor, Texture, TextureDescriptor,
+    TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
     util::{BufferInitDescriptor, DeviceExt},
 };
 
@@ -87,10 +87,17 @@ impl ComputeContext {
         }
     }
 
-    pub fn draw(&self, encoder: &mut CommandEncoder) {
+    pub fn draw(&self, encoder: &mut CommandEncoder, queue: &Queue) {
         let frame = self
             .frame
-            .fetch_add(1, std::sync::atomic::Ordering::Release) as usize;
+            .fetch_add(1, std::sync::atomic::Ordering::Release);
+        queue.write_buffer(
+            &self.frame_uniform,
+            0,
+            // Uniform buffers must be aligned to 16 bytes
+            &[frame.to_be_bytes(), [0; 4], [0; 4], [0; 4]].concat(),
+        );
+
         {
             let mut compute_pass = encoder.begin_compute_pass(&ComputePassDescriptor {
                 label: Some("Compute Pass"),
@@ -98,7 +105,11 @@ impl ComputeContext {
             });
 
             compute_pass.set_pipeline(&self.compute_pipeline);
-            compute_pass.set_bind_group(0, &self.textures_bind_groups[(frame + 1) % 2], &[]);
+            compute_pass.set_bind_group(
+                0,
+                &self.textures_bind_groups[(frame as usize + 1) % 2],
+                &[],
+            );
             compute_pass.set_bind_group(1, &self.settings_bind_group, &[]);
             compute_pass.dispatch_workgroups(
                 self.output_texture.width() / 8 + 1,

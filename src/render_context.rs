@@ -76,6 +76,10 @@ impl RenderContext {
         render_pass.draw(0..3, 0..3);
     }
 
+    pub(crate) fn frame(&self) -> u32 {
+        self.frame.load(std::sync::atomic::Ordering::Acquire)
+    }
+
     fn create_bind_group_layout(device: &Device) -> BindGroupLayout {
         device.create_bind_group_layout(&BindGroupLayoutDescriptor {
             label: Some("Render BindGroupLayout"),

@@ -32,13 +32,19 @@ pub fn benchmark(c: &mut Criterion) {
                     ),
                     |b, (size, sphere, device, queue, frames)| {
                         b.iter_batched(
-                            || ray::ComputeContext::new(&device, *size, &[sphere.clone()]),
+                            || {
+                                ray::ComputeContext::new(
+                                    device,
+                                    *size,
+                                    std::slice::from_ref(sphere),
+                                )
+                            },
                             |compute_ctx| {
                                 for _ in 0..*frames {
                                     let mut encoder = device.create_command_encoder(
                                         &CommandEncoderDescriptor::default(),
                                     );
-                                    compute_ctx.draw(&mut encoder);
+                                    compute_ctx.draw(&mut encoder, queue);
                                     queue.submit(Some(encoder.finish()));
                                 }
                             },
@@ -65,12 +71,12 @@ pub fn benchmark(c: &mut Criterion) {
                 ),
                 |b, (size, device, queue, frames)| {
                     b.iter_batched(
-                        || ray::ComputeContext::new(&device, *size, &SPHERES),
+                        || ray::ComputeContext::new(device, *size, &SPHERES),
                         |compute_ctx| {
                             for _ in 0..*frames {
                                 let mut encoder = device
                                     .create_command_encoder(&CommandEncoderDescriptor::default());
-                                compute_ctx.draw(&mut encoder);
+                                compute_ctx.draw(&mut encoder, queue);
                                 queue.submit(Some(encoder.finish()));
                             }
                         },

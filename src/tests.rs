@@ -69,7 +69,7 @@ fn draw_scene() {
             label: Some("Test Encoder"),
         });
 
-    compute_ctx.draw(&mut encoder);
+    compute_ctx.draw(&mut encoder, gpu_manager.queue());
 }
 
 #[test]
@@ -89,7 +89,7 @@ fn render_materials_to_file() {
             label: Some("Test Encoder"),
         });
 
-    compute_ctx.draw(&mut encoder);
+    compute_ctx.draw(&mut encoder, gpu_manager.queue());
     gpu_manager.queue().submit(Some(encoder.finish()));
 
     assert!(
@@ -134,7 +134,7 @@ fn render_fov_to_file() {
             label: Some("Test Encoder"),
         });
 
-    compute_ctx.draw(&mut encoder);
+    compute_ctx.draw(&mut encoder, gpu_manager.queue());
     gpu_manager.queue().submit(Some(encoder.finish()));
 
     assert!(
@@ -169,7 +169,7 @@ fn render_multiple_frames_materials() {
             0,
             &[i.to_be_bytes(), [0; 4], [0; 4], [0; 4]].concat(),
         );
-        compute_ctx.draw(&mut encoder);
+        compute_ctx.draw(&mut encoder, gpu_manager.queue());
         gpu_manager.queue().submit(Some(encoder.finish()));
     }
 
@@ -219,7 +219,7 @@ fn render_multiple_frames_fov() {
             0,
             &[i.to_be_bytes(), [0; 4], [0; 4], [0; 4]].concat(),
         );
-        compute_ctx.draw(&mut encoder);
+        compute_ctx.draw(&mut encoder, gpu_manager.queue());
         gpu_manager.queue().submit(Some(encoder.finish()));
     }
 
