@@ -59,8 +59,8 @@ pub fn benchmark(c: &mut Criterion) {
     single_spheres.finish();
 
     let mut complete_scene = c.benchmark_group("Complete Scene");
-    for output_size in [(1920, 1080), (256, 256), (128, 128), (512, 512)] {
-        for num_frames in [1, 5, 10, 60] {
+    for num_frames in [1, 5, 10, 60] {
+        for output_size in [(128, 128), (256, 256), (512, 512), (1920, 1080)] {
             complete_scene.bench_with_input(
                 format!("Draw entire scene in resolution {output_size:?} in {num_frames} frames."),
                 &(
