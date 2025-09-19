@@ -1,8 +1,8 @@
 @group(0) @binding(0) var texture: texture_storage_2d<rgba8unorm, write>;
 @group(0) @binding(1) var previous: texture_2d<f32>;
 
-@group(1) @binding(0) var<storage, read> spheres: array<Sphere>;
-@group(1) @binding(1) var<uniform> frame: u32;
+@group(1) @binding(0) var<uniform> frame: u32;
+@group(1) @binding(1) var<storage, read> spheres: array<Sphere>;
 
 
 const MAGENTA = vec3(0.74, 0.02, 0.84);

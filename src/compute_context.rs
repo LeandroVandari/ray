@@ -195,23 +195,23 @@ impl ComputeContext {
         device.create_bind_group_layout(&BindGroupLayoutDescriptor {
             label: Some("Compute BindGroupLayout"),
             entries: &[
-                // Spheres
+                // Frame
                 BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
                         min_binding_size: None,
                     },
                     count: None,
                 },
-                // Frame
+                // Spheres
                 BindGroupLayoutEntry {
                     binding: 1,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
                         has_dynamic_offset: false,
                         min_binding_size: None,
                     },
@@ -233,11 +233,11 @@ impl ComputeContext {
             entries: &[
                 BindGroupEntry {
                     binding: 0,
-                    resource: sphere_buffer.as_entire_binding(),
+                    resource: frame_uniform.as_entire_binding(),
                 },
                 BindGroupEntry {
                     binding: 1,
-                    resource: frame_uniform.as_entire_binding(),
+                    resource: sphere_buffer.as_entire_binding(),
                 },
             ],
         })
