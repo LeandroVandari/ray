@@ -95,7 +95,7 @@ impl ComputeContext {
             &self.frame_uniform,
             0,
             // Uniform buffers must be aligned to 16 bytes
-            &[frame.to_be_bytes(), [0; 4], [0; 4], [0; 4]].concat(),
+            &(frame as u128).to_le_bytes(),
         );
 
         {
