@@ -1,4 +1,7 @@
-use std::path::Path;
+use std::{
+    path::{Path, PathBuf},
+    sync::LazyLock,
+};
 
 use anyhow::{Result, bail};
 use gpu_manager::GpuManager;
@@ -18,6 +21,13 @@ pub mod renderer;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(feature = "dynamic_shaders")]
+static SHADERS_LOCATION: LazyLock<PathBuf> = LazyLock::new(|| {
+    std::env::var("RAY_TRACER_SHADERS")
+        .unwrap_or_else(|e| panic!("Error loading RAY_TRACER_SHADERS environment variable: {e}"))
+        .into()
+});
 
 pub struct App<'window> {
     renderer: Option<Renderer<'window>>,

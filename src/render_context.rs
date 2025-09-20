@@ -8,7 +8,7 @@ use wgpu::{
     ShaderStages, TextureFormat, TextureView, TextureViewDescriptor, VertexState,
 };
 
-use crate::compute_context::ComputeContext;
+use crate::{SHADERS_LOCATION, compute_context::ComputeContext};
 
 #[derive(Debug)]
 pub struct RenderContext {
@@ -116,13 +116,30 @@ impl RenderContext {
         bind_group_layout: &BindGroupLayout,
         output_format: TextureFormat,
     ) -> RenderPipeline {
+        let fragment_source = if cfg!(feature = "dynamic_shaders") {
+            std::fs::read_to_string(SHADERS_LOCATION.join("render").join("fragment.wgsl"))
+                .unwrap_or_else(|e| panic!("Error reading fragment shader: {e}."))
+                .into()
+        } else {
+            include_str!("shaders/render/fragment.wgsl").into()
+        };
+
         let fragment_shader = device.create_shader_module(ShaderModuleDescriptor {
             label: Some("Fragment Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("shaders/render/fragment.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(fragment_source),
         });
+
+        let vertex_source = if cfg!(feature = "dynamic_shaders") {
+            std::fs::read_to_string(SHADERS_LOCATION.join("render").join("vertex.wgsl"))
+                .unwrap_or_else(|e| panic!("Error reading vertex shader: {e}."))
+                .into()
+        } else {
+            include_str!("shaders/render/vertex.wgsl").into()
+        };
+
         let vertex_shader = device.create_shader_module(ShaderModuleDescriptor {
             label: Some("Vertex Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("shaders/render/vertex.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(vertex_source),
         });
 
         let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {

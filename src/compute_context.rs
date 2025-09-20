@@ -9,7 +9,7 @@ use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
 };
 
-use crate::objects;
+use crate::{SHADERS_LOCATION, objects};
 
 #[derive(Debug)]
 pub struct ComputeContext {
@@ -248,22 +248,44 @@ impl ComputeContext {
         textures_bind_group_layout: &BindGroupLayout,
         settings_bind_group_layout: &BindGroupLayout,
     ) -> ComputePipeline {
+        let shader_source = if cfg!(feature = "dynamic_shaders") {
+            let mut source = String::new();
+            for file in std::fs::read_dir(SHADERS_LOCATION.join("compute"))
+                .unwrap_or_else(|e| panic!("Couldn't read compute shaders directory: {e}"))
+            {
+                let Ok(file) = file else {
+                    log::warn!(
+                        "Error reading file in compute shaders: {}",
+                        file.unwrap_err()
+                    );
+                    continue;
+                };
+
+                source.push_str(
+                    &std::fs::read_to_string(file.path())
+                        .unwrap_or_else(|e| panic!("Error reading file in compute shaders: {e}")),
+                );
+            }
+
+            source.into()
+        } else {
+            concat!(
+                include_str!("shaders/compute/math.wgsl"),
+                include_str!("shaders/compute/random.wgsl"),
+                include_str!("shaders/compute/interval.wgsl"),
+                include_str!("shaders/compute/sphere.wgsl"),
+                include_str!("shaders/compute/ray.wgsl"),
+                include_str!("shaders/compute/hit_record.wgsl"),
+                include_str!("shaders/compute/material.wgsl"),
+                include_str!("shaders/compute/camera.wgsl"),
+                include_str!("shaders/compute/main.wgsl")
+            )
+            .into()
+        };
+
         let shader = device.create_shader_module(ShaderModuleDescriptor {
             label: Some("shader"),
-            source: wgpu::ShaderSource::Wgsl(
-                concat!(
-                    include_str!("shaders/compute/math.wgsl"),
-                    include_str!("shaders/compute/random.wgsl"),
-                    include_str!("shaders/compute/interval.wgsl"),
-                    include_str!("shaders/compute/sphere.wgsl"),
-                    include_str!("shaders/compute/ray.wgsl"),
-                    include_str!("shaders/compute/hit_record.wgsl"),
-                    include_str!("shaders/compute/material.wgsl"),
-                    include_str!("shaders/compute/camera.wgsl"),
-                    include_str!("shaders/compute/main.wgsl")
-                )
-                .into(),
-            ),
+            source: wgpu::ShaderSource::Wgsl(shader_source),
         });
 
         let compute_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {

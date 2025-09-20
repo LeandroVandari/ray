@@ -28,3 +28,7 @@ codegen-units = 1
 lto = true
 strip = true
 incremental = false
+
+[features]
+default = ["dynamic_shaders"]
+dynamic_shaders = []
